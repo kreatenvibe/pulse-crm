@@ -1,0 +1,305 @@
+import type { Lead, LeadPriority, LeadSource, LeadStatus } from "@/types/lead";
+import { d, pad } from "./helpers";
+
+const NAMES = [
+  "Rahul Verma",
+  "Neha Kapoor",
+  "Amit Joshi",
+  "Pooja Nair",
+  "Suresh Krishnan",
+  "Kavita Desai",
+  "Rohan Gupta",
+  "Meera Banerjee",
+  "Aditya Rao",
+  "Shruti Malhotra",
+  "Karan Singh",
+  "Divya Pillai",
+  "Nikhil Agarwal",
+  "Anjali Menon",
+  "Manish Chawla",
+  "Ritu Saxena",
+  "Siddharth Bose",
+  "Priyanka Jain",
+  "Harsh Trivedi",
+  "Swati Kulkarni",
+  "Deepak Yadav",
+  "Ishita Bhatt",
+  "Gaurav Pandey",
+  "Nisha Thomas",
+  "Varun Shetty",
+  "Aisha Khan",
+  "Rohit Chauhan",
+  "Tanvi Shah",
+  "Abhishek Das",
+  "Lakshmi Venkatesh",
+  "Yash Bansal",
+  "Sonal Mehra",
+  "Pranav Iyer",
+  "Chitra Rajan",
+  "Mohit Sinha",
+  "Farah Qureshi",
+  "Ravi Hegde",
+  "Bhavna Parekh",
+  "Imran Ali",
+  "Jyoti Rawat",
+  "Sanjay Kulkarni",
+  "Anita Fernandes",
+  "Vivek Nambiar",
+  "Kirti Solanki",
+  "Ashwin Menon",
+  "Pallavi Ghosh",
+  "Dhruv Kapoor",
+  "Rekha Sundaram",
+  "Naveen Prasad",
+  "Simran Kaur",
+] as const;
+
+const COMPANIES = [
+  "Sunrise Textiles Pvt Ltd",
+  "Deccan Spice Kitchen",
+  "BlueLotus Wellness",
+  "Metro Auto Care",
+  "GreenLeaf Organics",
+  "PixelCraft Studio",
+  "Coastal Freight Co",
+  "Aarohi Dental Clinic",
+  "Nexus Softwares",
+  "Heritage Homestays",
+  "Swift Packers & Movers",
+  "Urban Brew Cafe",
+  "Lotus Pharma Distributors",
+  "Skyline Architects",
+  "Prakruti Farms",
+  "Omkara Jewellers",
+  "TechVista Solutions",
+  "Annapurna Caterers",
+  "BrightKids Academy",
+  "Sahara Logistics",
+  undefined,
+  "Kerala Ayurveda Hub",
+  "Rapid Repair Garage",
+  undefined,
+  "Indigo Print House",
+  "Mumbai Street Foods",
+  "Veda Yoga Studio",
+  undefined,
+  "Orient Exports",
+  "Shakti Fitness Club",
+  "Coral Beach Resort",
+  "Nova Dental Care",
+  undefined,
+  "Gyan Books & Stationery",
+  "Peak Performance Gym",
+  "Saffron Banquets",
+  "Horizon Realty",
+  undefined,
+  "Triveni Electronics",
+  "Palm Grove Nursery",
+  "Cipher Analytics",
+  "Amulya Sweets",
+  undefined,
+  "NorthStar Coaching",
+  "Banyan Tree Cafe",
+  "Elite Security Services",
+  "Maple Dental Studio",
+  undefined,
+  "Riverbend Homestay",
+  "Pulse Fitness Hub",
+] as const;
+
+const CITIES_EMAIL = [
+  "rahul.verma",
+  "neha.kapoor",
+  "amit.joshi",
+  "pooja.nair",
+  "suresh.krishnan",
+  "kavita.desai",
+  "rohan.gupta",
+  "meera.banerjee",
+  "aditya.rao",
+  "shruti.malhotra",
+  "karan.singh",
+  "divya.pillai",
+  "nikhil.agarwal",
+  "anjali.menon",
+  "manish.chawla",
+  "ritu.saxena",
+  "siddharth.bose",
+  "priyanka.jain",
+  "harsh.trivedi",
+  "swati.kulkarni",
+  "deepak.yadav",
+  "ishita.bhatt",
+  "gaurav.pandey",
+  "nisha.thomas",
+  "varun.shetty",
+  "aisha.khan",
+  "rohit.chauhan",
+  "tanvi.shah",
+  "abhishek.das",
+  "lakshmi.venkatesh",
+  "yash.bansal",
+  "sonal.mehra",
+  "pranav.iyer",
+  "chitra.rajan",
+  "mohit.sinha",
+  "farah.qureshi",
+  "ravi.hegde",
+  "bhavna.parekh",
+  "imran.ali",
+  "jyoti.rawat",
+  "sanjay.kulkarni",
+  "anita.fernandes",
+  "vivek.nambiar",
+  "kirti.solanki",
+  "ashwin.menon",
+  "pallavi.ghosh",
+  "dhruv.kapoor",
+  "rekha.sundaram",
+  "naveen.prasad",
+  "simran.kaur",
+] as const;
+
+const PHONES = [
+  "+91 98765 43210",
+  "+91 98201 55678",
+  "+91 99887 11223",
+  "+91 98111 22334",
+  "+91 97654 88990",
+  "+91 99001 44556",
+  "+91 98450 66778",
+  "+91 97123 33445",
+  "+91 98670 77889",
+  "+91 99301 99001",
+  "+91 98123 45670",
+  "+91 98700 11220",
+  "+91 99220 33440",
+  "+91 97410 55660",
+  "+91 98880 77880",
+  "+91 98330 99000",
+  "+91 97000 12340",
+  "+91 99110 23450",
+  "+91 98220 34560",
+  "+91 98550 45670",
+  "+91 98660 56780",
+  "+91 98770 67890",
+  "+91 98880 78901",
+  "+91 98990 89012",
+  "+91 98000 90123",
+  "+91 98110 01234",
+  "+91 98220 12345",
+  "+91 98330 23456",
+  "+91 98440 34567",
+  "+91 98550 45678",
+  "+91 98660 56789",
+  "+91 98770 67891",
+  "+91 98880 78902",
+  "+91 98990 89013",
+  "+91 97001 90124",
+  "+91 97112 01235",
+  "+91 97223 12346",
+  "+91 97334 23457",
+  "+91 97445 34568",
+  "+91 97556 45679",
+  "+91 97667 56780",
+  "+91 97778 67891",
+  "+91 97889 78902",
+  "+91 97990 89013",
+  "+91 98001 90124",
+  "+91 98112 01235",
+  "+91 98223 12346",
+  "+91 98334 23457",
+  "+91 98445 34568",
+  "+91 98556 45679",
+] as const;
+
+const SOURCES: LeadSource[] = [
+  "website",
+  "whatsapp",
+  "facebook",
+  "instagram",
+  "google",
+  "referral",
+  "walk_in",
+  "phone",
+];
+
+const PRIORITIES: LeadPriority[] = ["low", "medium", "high"];
+
+const TAG_SETS: string[][] = [
+  ["hot", "demo-requested"],
+  ["smb"],
+  ["enterprise", "follow-up"],
+  ["price-sensitive"],
+  ["referral"],
+  ["whatsapp-lead"],
+  ["website", "form"],
+  ["dental"],
+  ["hospitality"],
+  ["retail"],
+];
+
+const MESSAGES = [
+  "Interested in a CRM demo for our sales team in Pune.",
+  "Saw your WhatsApp ad — need help tracking walk-in leads.",
+  "Looking for appointment scheduling for our clinic.",
+  "Want to migrate from spreadsheets. Call after 6pm.",
+  "Need invoicing + follow-ups for our catering business.",
+  undefined,
+  "Referred by Ramesh from Metro Auto. Please connect.",
+  "Google search — pricing for 5 users?",
+  "Walk-in at the Bangalore expo. Left a brochure.",
+  "Instagram DM — interested in WhatsApp integration.",
+] as const;
+
+/** lead-001 … lead-020 are converted → customers. */
+function statusFor(index: number): LeadStatus {
+  if (index <= 20) return "converted";
+  if (index <= 28) return "new";
+  if (index <= 35) return "contacted";
+  if (index <= 42) return "qualified";
+  if (index <= 46) return "appointment_scheduled";
+  return "lost";
+}
+
+function assigneeFor(index: number): string {
+  const sales = ["user-003", "user-004", "user-005", "user-002"] as const;
+  return sales[(index - 1) % sales.length];
+}
+
+function createdAtFor(index: number): Date {
+  const month = index <= 20 ? 1 + ((index - 1) % 6) : 3 + ((index - 21) % 5);
+  const day = 1 + ((index * 3) % 27);
+  return d(`2026-${pad(month, 2)}-${pad(day, 2)}T10:${pad(index % 60, 2)}:00+05:30`);
+}
+
+export const leads: Lead[] = Array.from({ length: 50 }, (_, i) => {
+  const index = i + 1;
+  const status = statusFor(index);
+  const createdAt = createdAtFor(index);
+  const company = COMPANIES[i];
+  const hasEmail = index % 7 !== 0;
+  const lastContactedAt =
+    status === "new"
+      ? undefined
+      : d(
+          `2026-${pad(Math.min(7, 1 + (index % 7)), 2)}-${pad(1 + (index % 26), 2)}T${pad(9 + (index % 8), 2)}:30:00+05:30`,
+        );
+
+  return {
+    id: `lead-${pad(index)}`,
+    name: NAMES[i],
+    email: hasEmail ? `${CITIES_EMAIL[i]}@gmail.com` : undefined,
+    phone: PHONES[i],
+    company,
+    status,
+    source: SOURCES[(index - 1) % SOURCES.length],
+    priority: PRIORITIES[(index - 1) % PRIORITIES.length],
+    assignedTo: assigneeFor(index),
+    message: MESSAGES[(index - 1) % MESSAGES.length],
+    tags: TAG_SETS[(index - 1) % TAG_SETS.length],
+    lastContactedAt,
+    createdAt,
+    updatedAt: lastContactedAt ?? createdAt,
+  };
+});
