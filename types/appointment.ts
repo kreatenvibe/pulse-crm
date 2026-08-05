@@ -8,7 +8,6 @@ export type AppointmentStatus =
   | "no_show";
 
 export interface Appointment extends BaseEntity {
-  // TODO: XOR — exactly one of leadId or customerId must be present (enforce at DB/API later).
   leadId?: ID;
   customerId?: ID;
 

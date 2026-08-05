@@ -1,3 +1,4 @@
+import { serviceErrorResponse } from "@/lib/api-route";
 import { invoiceService } from "@/services";
 
 export async function GET() {
@@ -10,7 +11,7 @@ export async function POST(request: Request) {
     const body = await request.json();
     const invoice = await invoiceService.create(body);
     return Response.json(invoice, { status: 201 });
-  } catch {
-    return Response.json({ error: "Bad Request" }, { status: 400 });
+  } catch (error) {
+    return serviceErrorResponse(error);
   }
 }

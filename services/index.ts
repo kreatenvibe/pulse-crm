@@ -7,6 +7,7 @@ export { noteService } from "./note.service";
 export { serviceService } from "./service.service";
 export { invoiceService } from "./invoice.service";
 export { dashboardService } from "./dashboard.service";
+export { reportService } from "./report.service";
 
 export type { CreateLeadInput, UpdateLeadInput } from "./lead.service";
 export type {
@@ -32,3 +33,4 @@ export type {
   UpdateInvoiceInput,
 } from "./invoice.service";
 export type { DashboardSummary, DashboardSummaryDto } from "@/types/dashboard";
+export type { ReportSummary, ReportSummaryDto } from "@/types/report";

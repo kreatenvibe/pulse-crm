@@ -1,3 +1,4 @@
+import { serviceErrorResponse } from "@/lib/api-route";
 import { serviceService } from "@/services";
 
 type Params = Promise<{ id: string }>;
@@ -26,8 +27,8 @@ export async function PATCH(
       return Response.json({ error: "Not Found" }, { status: 404 });
     }
     return Response.json(service);
-  } catch {
-    return Response.json({ error: "Bad Request" }, { status: 400 });
+  } catch (error) {
+    return serviceErrorResponse(error);
   }
 }
 

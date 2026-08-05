@@ -6,10 +6,10 @@ import {
   LeadActions,
   LeadAppointments,
   LeadProfile,
-  LeadTasks,
   LeadTimeline,
 } from "@/components/leads";
-import { EmptyState, LoadingState } from "@/components/ui";
+import { RelatedTasks } from "@/components/tasks";
+import { EmptyState, ErrorState, LoadingState } from "@/components/ui";
 import { useLeadDetails } from "@/hooks";
 
 export default function LeadDetailsPage() {
@@ -48,21 +48,24 @@ export default function LeadDetailsPage() {
       {loading ? (
         <LoadingState message="Loading lead…" />
       ) : error ? (
-        <EmptyState message={error} />
+        <ErrorState message={error} />
       ) : !data ? (
         <EmptyState message="Lead not found." />
       ) : (
         <>
           <LeadProfile lead={data.lead} assignedUser={data.assignedUser} />
 
-          <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
-            <div className="flex flex-col gap-6">
+          <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
+            <div className="flex min-w-0 flex-col gap-6">
               <LeadTimeline
                 activities={data.activities}
                 notes={data.notes}
               />
-              <div className="grid gap-6 lg:grid-cols-2">
-                <LeadTasks tasks={data.tasks} />
+              <div className="grid items-start gap-6 lg:grid-cols-2">
+                <RelatedTasks
+                  tasks={data.tasks}
+                  emptyMessage="No tasks for this lead."
+                />
                 <LeadAppointments appointments={data.appointments} />
               </div>
             </div>

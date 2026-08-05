@@ -2,12 +2,64 @@ import { services } from "@/data/services";
 import type { ID } from "@/types/common";
 import type { Service, ServiceStatus } from "@/types/service";
 import { nextId, now } from "./helpers";
+import {
+  assertCustomerId,
+  assertEnum,
+  assertOptionalString,
+  assertRequiredString,
+  toOptionalDate,
+} from "./validation";
 
 export type CreateServiceInput = Omit<
   Service,
   "id" | "createdAt" | "updatedAt"
 >;
 export type UpdateServiceInput = Partial<CreateServiceInput>;
+
+const SERVICE_STATUSES: ServiceStatus[] = [
+  "planned",
+  "in_progress",
+  "completed",
+  "cancelled",
+];
+
+function validateCreateInput(data: CreateServiceInput): CreateServiceInput {
+  return {
+    customerId: assertCustomerId(data.customerId),
+    title: assertRequiredString(data.title, "title"),
+    description: assertOptionalString(data.description, "description"),
+    status: assertEnum(data.status, SERVICE_STATUSES, "status"),
+    scheduledDate: toOptionalDate(data.scheduledDate, "scheduledDate"),
+  };
+}
+
+function validateUpdateInput(data: UpdateServiceInput): UpdateServiceInput {
+  const validated: UpdateServiceInput = {};
+
+  if ("customerId" in data && data.customerId !== undefined) {
+    validated.customerId = assertCustomerId(data.customerId);
+  }
+  if ("title" in data && data.title !== undefined) {
+    validated.title = assertRequiredString(data.title, "title");
+  }
+  if ("description" in data) {
+    validated.description = assertOptionalString(
+      data.description,
+      "description",
+    );
+  }
+  if ("status" in data && data.status !== undefined) {
+    validated.status = assertEnum(data.status, SERVICE_STATUSES, "status");
+  }
+  if ("scheduledDate" in data) {
+    validated.scheduledDate = toOptionalDate(
+      data.scheduledDate,
+      "scheduledDate",
+    );
+  }
+
+  return validated;
+}
 
 class ServiceService {
   async getAll(): Promise<Service[]> {
@@ -19,9 +71,10 @@ class ServiceService {
   }
 
   async create(data: CreateServiceInput): Promise<Service> {
+    const validated = validateCreateInput(data);
     const timestamp = now();
     const service: Service = {
-      ...data,
+      ...validated,
       id: nextId("svc", services),
       createdAt: timestamp,
       updatedAt: timestamp,
@@ -34,9 +87,10 @@ class ServiceService {
     const index = services.findIndex((service) => service.id === id);
     if (index === -1) return null;
 
+    const validated = validateUpdateInput(data);
     const updated: Service = {
       ...services[index],
-      ...data,
+      ...validated,
       id,
       updatedAt: now(),
     };

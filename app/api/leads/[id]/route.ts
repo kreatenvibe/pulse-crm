@@ -1,3 +1,4 @@
+import { serviceErrorResponse } from "@/lib/api-route";
 import { leadService } from "@/services";
 
 type Params = Promise<{ id: string }>;
@@ -26,8 +27,8 @@ export async function PATCH(
       return Response.json({ error: "Not Found" }, { status: 404 });
     }
     return Response.json(lead);
-  } catch {
-    return Response.json({ error: "Bad Request" }, { status: 400 });
+  } catch (error) {
+    return serviceErrorResponse(error);
   }
 }
 
@@ -36,9 +37,13 @@ export async function DELETE(
   { params }: { params: Params },
 ) {
   const { id } = await params;
-  const deleted = await leadService.delete(id);
-  if (!deleted) {
-    return Response.json({ error: "Not Found" }, { status: 404 });
+  try {
+    const deleted = await leadService.delete(id);
+    if (!deleted) {
+      return Response.json({ error: "Not Found" }, { status: 404 });
+    }
+    return new Response(null, { status: 204 });
+  } catch (error) {
+    return serviceErrorResponse(error);
   }
-  return new Response(null, { status: 204 });
 }

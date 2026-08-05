@@ -1,4 +1,4 @@
-import { BaseEntity, ID } from "./common";
+import { BaseEntity, ID, type WithIsoDates } from "./common";
 
 export type InvoiceStatus =
   | "draft"
@@ -18,3 +18,6 @@ export interface Invoice extends BaseEntity {
   issuedAt: Date;
   dueDate: Date;
 }
+
+/** Invoice as returned by API (dates are ISO strings). */
+export type InvoiceDto = WithIsoDates<Invoice>;

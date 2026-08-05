@@ -1,14 +1,11 @@
 "use client";
 
-import {
-  SearchInput,
-  SelectFilter,
-} from "@/components/ui";
+import { SearchInput, SelectFilter } from "@/components/ui";
 import type { LeadSource, LeadStatus } from "@/types/lead";
+import { formatLabel } from "@/lib/format";
 import {
   LEAD_SOURCES,
   LEAD_STATUSES,
-  formatLabel,
   type SortOrder,
 } from "./utils";
 
@@ -34,49 +31,53 @@ export function LeadFilters({
   onSortChange,
 }: LeadFiltersProps) {
   return (
-    <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-      <SearchInput
-        id="lead-search"
-        value={search}
-        onChange={onSearchChange}
-        placeholder="Search by name or company"
-      />
-
-      <div className="flex flex-wrap gap-4">
-        <SelectFilter
-          id="lead-status"
-          label="Status"
-          value={status}
-          allLabel="All statuses"
-          options={LEAD_STATUSES.map((item) => ({
-            value: item,
-            label: formatLabel(item),
-          }))}
-          onChange={(value) => onStatusChange(value as LeadStatus | "")}
+    <div className="rounded-xl border border-border bg-surface p-3 shadow-card sm:p-4">
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:gap-4">
+        <SearchInput
+          id="lead-search"
+          label="Search leads"
+          value={search}
+          onChange={onSearchChange}
+          placeholder="Search by name or company"
+          className="w-full min-w-0 flex-1 lg:max-w-sm"
         />
 
-        <SelectFilter
-          id="lead-source"
-          label="Source"
-          value={source}
-          allLabel="All sources"
-          options={LEAD_SOURCES.map((item) => ({
-            value: item,
-            label: formatLabel(item),
-          }))}
-          onChange={(value) => onSourceChange(value as LeadSource | "")}
-        />
+        <div className="flex flex-wrap items-end gap-3">
+          <SelectFilter
+            id="lead-status"
+            label="Status"
+            value={status}
+            allLabel="All statuses"
+            options={LEAD_STATUSES.map((item) => ({
+              value: item,
+              label: formatLabel(item),
+            }))}
+            onChange={(value) => onStatusChange(value as LeadStatus | "")}
+          />
 
-        <SelectFilter
-          id="lead-sort"
-          label="Sort by created"
-          value={sort}
-          options={[
-            { value: "newest", label: "Newest first" },
-            { value: "oldest", label: "Oldest first" },
-          ]}
-          onChange={(value) => onSortChange(value as SortOrder)}
-        />
+          <SelectFilter
+            id="lead-source"
+            label="Source"
+            value={source}
+            allLabel="All sources"
+            options={LEAD_SOURCES.map((item) => ({
+              value: item,
+              label: formatLabel(item),
+            }))}
+            onChange={(value) => onSourceChange(value as LeadSource | "")}
+          />
+
+          <SelectFilter
+            id="lead-sort"
+            label="Sort"
+            value={sort}
+            options={[
+              { value: "newest", label: "Newest first" },
+              { value: "oldest", label: "Oldest first" },
+            ]}
+            onChange={(value) => onSortChange(value as SortOrder)}
+          />
+        </div>
       </div>
     </div>
   );

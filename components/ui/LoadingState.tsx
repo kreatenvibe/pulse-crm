@@ -4,7 +4,7 @@ type LoadingStateProps = {
 
 export function LoadingState({ message = "Loading…" }: LoadingStateProps) {
   return (
-    <div className="rounded border border-zinc-200 px-4 py-10 text-center text-sm text-zinc-500">
+    <div className="rounded-xl border border-border bg-surface px-5 py-10 text-center text-sm text-foreground-muted shadow-card">
       {message}
     </div>
   );

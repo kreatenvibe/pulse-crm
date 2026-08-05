@@ -25,3 +25,23 @@ export type WithIsoDates<T> = {
     ? Exclude<T[K], Date> | IsoDateString
     : T[K];
 };
+
+/** Request params for list endpoints (e.g. `?page=1&pageSize=10`). */
+export type PaginationParams = {
+  page: number;
+  pageSize: number;
+};
+
+/** Metadata returned with paginated list responses. */
+export type PaginationMeta = {
+  page: number;
+  pageSize: number;
+  totalItems: number;
+  totalPages: number;
+};
+
+/** Standard paginated list envelope for API/service responses. */
+export type PaginatedResult<T> = {
+  data: T[];
+  pagination: PaginationMeta;
+};

@@ -1,4 +1,9 @@
-import { BaseEntity, ID, type WithIsoDates } from "./common";
+import {
+  BaseEntity,
+  ID,
+  type PaginatedResult,
+  type WithIsoDates,
+} from "./common";
 
 export type LeadStatus =
   | "new"
@@ -43,5 +48,8 @@ export interface Lead extends BaseEntity {
   lastContactedAt?: Date;
 }
 
-/** Lead as returned by `/api/leads` (dates are ISO strings). */
+/** Lead as returned by `/api/leads` full list (dates are ISO strings). */
 export type LeadDto = WithIsoDates<Lead>;
+
+/** Paginated lead list from `GET /api/leads?page=&pageSize=`. */
+export type PaginatedLeadsDto = PaginatedResult<LeadDto>;
