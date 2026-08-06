@@ -43,36 +43,55 @@ export default function LeadsPage() {
     setPage(pagination.page);
   }
 
+  const totalCount = loading ? null : filteredLeads.length;
+
   return (
-    <div className="mx-auto flex w-full max-w-7xl flex-col gap-6">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-          Leads
-        </h1>
+    <div className="flex w-full flex-col">
+      <div className="border-b border-border px-5 py-6 sm:px-6 lg:px-8">
+        <div className="flex flex-wrap items-baseline gap-2.5">
+          <h1 className="text-2xl font-semibold tracking-tight text-foreground">
+            Leads
+          </h1>
+          {totalCount !== null ? (
+            <span className="text-lg font-medium text-foreground-muted tabular-nums">
+              {totalCount}
+            </span>
+          ) : null}
+        </div>
         <p className="mt-1 text-sm text-foreground-muted">
           Search, filter, and review incoming leads.
         </p>
       </div>
 
-      <LeadFilters
-        search={search}
-        status={status}
-        source={source}
-        sort={sort}
-        onSearchChange={setSearch}
-        onStatusChange={setStatus}
-        onSourceChange={setSource}
-        onSortChange={setSort}
-      />
+      <div className="border-b border-border px-5 py-4 sm:px-6 lg:px-8">
+        <LeadFilters
+          search={search}
+          status={status}
+          source={source}
+          sort={sort}
+          onSearchChange={setSearch}
+          onStatusChange={setStatus}
+          onSourceChange={setSource}
+          onSortChange={setSort}
+        />
+      </div>
 
       {loading ? (
-        <LoadingState message="Loading leads…" />
+        <div className="px-5 py-6 sm:px-6 lg:px-8">
+          <LoadingState message="Loading leads…" />
+        </div>
       ) : error ? (
-        <ErrorState message={error} />
+        <div className="px-5 py-6 sm:px-6 lg:px-8">
+          <ErrorState message={error} />
+        </div>
       ) : (
-        <div className="flex flex-col gap-4">
-          <LeadTable leads={pageLeads} />
-          <Pagination pagination={pagination} onPageChange={setPage} />
+        <div className="flex flex-col">
+          <div className="px-5 sm:px-6 lg:px-8">
+            <LeadTable leads={pageLeads} />
+          </div>
+          <div className="border-t border-border px-5 py-4 sm:px-6 lg:px-8">
+            <Pagination pagination={pagination} onPageChange={setPage} />
+          </div>
         </div>
       )}
     </div>

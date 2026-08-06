@@ -28,7 +28,7 @@ export function AppointmentFilters({
   onMonthChange,
 }: AppointmentFiltersProps) {
   return (
-    <div className="rounded-xl border border-border bg-surface p-3 shadow-card sm:p-4">
+    <div className="border-b border-border pb-4">
       <div className="flex flex-col gap-3">
         <div className="flex flex-wrap items-end gap-3">
           <SelectFilter

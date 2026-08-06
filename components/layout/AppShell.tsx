@@ -18,7 +18,7 @@ import {
 import { useEffect, useState, type ReactNode } from "react";
 import {
   isNavItemActive,
-  mainNavItems,
+  navGroups,
   settingsNavItem,
   type NavItem,
 } from "./navigation";
@@ -47,10 +47,10 @@ function NavLinks({
   function linkClass(href: string) {
     const active = isNavItemActive(pathname, href);
     return [
-      "relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors",
+      "flex items-center gap-2.5 rounded-md px-2.5 py-2 text-sm transition-colors",
       active
-        ? "bg-brand/20 font-medium text-sidebar-foreground-active"
-        : "text-sidebar-foreground hover:bg-sidebar-hover hover:text-sidebar-foreground-active",
+        ? "bg-sidebar-active font-semibold text-sidebar-foreground-active"
+        : "font-normal text-sidebar-foreground hover:bg-sidebar-hover hover:text-sidebar-foreground-active",
     ].join(" ");
   }
 
@@ -66,13 +66,7 @@ function NavLinks({
         onClick={onNavigate}
         aria-current={active ? "page" : undefined}
       >
-        {active ? (
-          <span
-            className="absolute inset-y-1 left-0 w-1 rounded-r-full bg-brand"
-            aria-hidden
-          />
-        ) : null}
-        <Icon className="size-4 shrink-0" aria-hidden />
+        <Icon className="size-4 shrink-0 stroke-[1.5]" aria-hidden />
         {item.label}
       </Link>
     );
@@ -81,10 +75,17 @@ function NavLinks({
   return (
     <>
       <nav
-        className="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto"
+        className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto"
         aria-label="Main"
       >
-        {mainNavItems.map(renderLink)}
+        {navGroups.map((group) => (
+          <div key={group.id} className="flex flex-col gap-0.5">
+            <p className="px-2.5 pb-1.5 text-[10px] font-medium tracking-[0.08em] text-foreground-muted uppercase">
+              {group.label}
+            </p>
+            {group.items.map(renderLink)}
+          </div>
+        ))}
       </nav>
       <div className="shrink-0 border-t border-sidebar-border pt-3">
         {renderLink(settingsNavItem)}
@@ -97,12 +98,17 @@ function Brand() {
   return (
     <Link
       href="/dashboard"
-      className="flex items-center gap-2.5 text-sm font-semibold tracking-tight text-sidebar-foreground-active"
+      className="flex items-center gap-2.5 text-sm font-semibold tracking-tight text-foreground"
     >
-      <span className="flex size-8 items-center justify-center rounded-lg bg-brand text-foreground-inverse">
-        <Activity className="size-4" aria-hidden />
+      <span className="flex size-7 items-center justify-center rounded-md bg-foreground text-foreground-inverse">
+        <Activity className="size-3.5" aria-hidden />
       </span>
-      Pulse CRM
+      <span className="leading-tight">
+        Pulse CRM
+        <span className="mt-0.5 block text-[11px] font-normal text-foreground-muted">
+          Workspace
+        </span>
+      </span>
     </Link>
   );
 }
@@ -132,11 +138,12 @@ export function AppShell({ children }: AppShellProps) {
 
   return (
     <div className="flex min-h-full bg-background">
-      <aside className="sticky top-0 hidden h-screen w-60 shrink-0 flex-col bg-sidebar lg:flex">
-        <div className="shrink-0 border-b border-sidebar-border px-4 py-5">
+      {/* ~16–18% width; flush against main — dividers meet this edge */}
+      <aside className="sticky top-0 hidden h-screen w-56 shrink-0 flex-col border-r border-sidebar-border bg-sidebar lg:flex xl:w-60">
+        <div className="shrink-0 px-4 py-5">
           <Brand />
         </div>
-        <div className="flex min-h-0 flex-1 flex-col px-3 py-4">
+        <div className="flex min-h-0 flex-1 flex-col px-2.5 pb-4">
           <NavLinks pathname={pathname} />
         </div>
       </aside>
@@ -144,7 +151,7 @@ export function AppShell({ children }: AppShellProps) {
       {mobileOpen ? (
         <button
           type="button"
-          className="fixed inset-0 z-40 bg-foreground/40 lg:hidden"
+          className="fixed inset-0 z-40 bg-foreground/20 lg:hidden"
           aria-label="Close navigation menu"
           onClick={() => setMobileOpen(false)}
         />
@@ -152,12 +159,12 @@ export function AppShell({ children }: AppShellProps) {
 
       <aside
         className={[
-          "fixed inset-y-0 left-0 z-50 flex w-64 flex-col bg-sidebar transition-transform duration-200 lg:hidden",
+          "fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-sidebar-border bg-sidebar transition-transform duration-200 lg:hidden",
           mobileOpen ? "translate-x-0" : "-translate-x-full",
         ].join(" ")}
         aria-hidden={!mobileOpen}
       >
-        <div className="flex items-center justify-between border-b border-sidebar-border px-4 py-4">
+        <div className="flex items-center justify-between px-4 py-4">
           <Brand />
           <button
             type="button"
@@ -168,7 +175,7 @@ export function AppShell({ children }: AppShellProps) {
             <X className="size-5" aria-hidden />
           </button>
         </div>
-        <div className="flex min-h-0 flex-1 flex-col px-3 py-4">
+        <div className="flex min-h-0 flex-1 flex-col px-2.5 pb-4">
           <NavLinks
             pathname={pathname}
             onNavigate={() => setMobileOpen(false)}
@@ -176,7 +183,7 @@ export function AppShell({ children }: AppShellProps) {
         </div>
       </aside>
 
-      <div className="flex min-w-0 flex-1 flex-col">
+      <div className="flex min-w-0 flex-1 flex-col bg-surface">
         <header className="flex items-center gap-3 border-b border-border bg-surface px-4 py-3 lg:hidden">
           <button
             type="button"
@@ -190,7 +197,8 @@ export function AppShell({ children }: AppShellProps) {
           <span className="text-sm font-semibold text-foreground">Pulse CRM</span>
         </header>
 
-        <main className="flex-1 px-4 py-6 sm:px-6 lg:px-8">{children}</main>
+        {/* No horizontal padding — section dividers meet the sidebar border */}
+        <main className="min-w-0 flex-1">{children}</main>
       </div>
     </div>
   );

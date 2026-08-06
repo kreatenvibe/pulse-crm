@@ -42,7 +42,7 @@ export function SelectFilter({
         value={value}
         onChange={(event) => onChange(event.target.value)}
         aria-label={hideLabel ? label : undefined}
-        className="h-9 min-w-[8.5rem] rounded-lg border border-border bg-surface px-2.5 text-sm text-foreground shadow-card outline-none transition-[border-color,box-shadow] hover:border-border-strong focus:border-brand focus:ring-2 focus:ring-ring/20"
+        className="h-9 min-w-34 rounded-lg border border-border bg-surface px-2.5 text-sm text-foreground outline-none transition-[border-color,box-shadow] hover:border-border-strong focus:border-brand focus:ring-2 focus:ring-ring/20"
       >
         {allLabel !== undefined ? (
           <option value="">{allLabel}</option>

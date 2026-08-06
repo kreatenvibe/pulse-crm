@@ -36,7 +36,7 @@ function MetaItem({
 }) {
   return (
     <div className="flex min-w-0 items-start gap-3">
-      <span className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg bg-surface-muted text-foreground-secondary">
+      <span className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-md bg-surface-muted text-foreground-secondary">
         {icon}
       </span>
       <div className="min-w-0">
@@ -53,7 +53,7 @@ export function CustomerProfile({
   sourceLead,
 }: CustomerProfileProps) {
   return (
-    <section className="rounded-xl border border-border bg-surface p-5 shadow-card sm:p-6">
+    <section className="border-b border-border px-5 py-6 sm:px-6 lg:px-8">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2.5">

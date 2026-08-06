@@ -20,20 +20,21 @@ type StatusBadgeProps = {
   className?: string;
 };
 
+/** Outline badges — thin border, no fill (matches reference table status chips). */
 const TONE_CLASS: Record<StatusBadgeTone, string> = {
-  brand: "bg-brand-soft text-brand",
-  success: "bg-success-soft text-success",
-  warning: "bg-warning-soft text-warning",
-  danger: "bg-danger-soft text-danger",
-  info: "bg-info-soft text-info",
-  neutral: "bg-neutral-soft text-neutral",
-  "pipeline-new": "bg-pipeline-new/15 text-pipeline-new",
-  "pipeline-contacted": "bg-pipeline-contacted/15 text-pipeline-contacted",
-  "pipeline-qualified": "bg-pipeline-qualified/15 text-pipeline-qualified",
+  brand: "border-brand/35 text-brand",
+  success: "border-success/35 text-success",
+  warning: "border-warning/40 text-warning",
+  danger: "border-danger/35 text-danger",
+  info: "border-info/35 text-info",
+  neutral: "border-border-strong text-neutral",
+  "pipeline-new": "border-pipeline-new/40 text-pipeline-new",
+  "pipeline-contacted": "border-pipeline-contacted/40 text-pipeline-contacted",
+  "pipeline-qualified": "border-pipeline-qualified/40 text-pipeline-qualified",
   "pipeline-appointment":
-    "bg-pipeline-appointment/15 text-pipeline-appointment",
-  "pipeline-converted": "bg-pipeline-converted/15 text-pipeline-converted",
-  "pipeline-lost": "bg-pipeline-lost/15 text-pipeline-lost",
+    "border-pipeline-appointment/40 text-pipeline-appointment",
+  "pipeline-converted": "border-pipeline-converted/40 text-pipeline-converted",
+  "pipeline-lost": "border-pipeline-lost/40 text-pipeline-lost",
 };
 
 export function StatusBadge({
@@ -43,7 +44,7 @@ export function StatusBadge({
 }: StatusBadgeProps) {
   return (
     <span
-      className={`inline-flex max-w-full items-center truncate rounded-md px-2 py-1 text-xs font-medium ${TONE_CLASS[tone]} ${className}`}
+      className={`inline-flex max-w-full items-center truncate rounded-md border bg-transparent px-2 py-0.5 text-[11px] font-medium tracking-wide uppercase ${TONE_CLASS[tone]} ${className}`}
     >
       {children}
     </span>

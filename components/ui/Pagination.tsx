@@ -36,7 +36,7 @@ export function Pagination({ pagination, onPageChange }: PaginationProps) {
           aria-label="Previous page"
           disabled={!canPrev}
           onClick={() => onPageChange(page - 1)}
-          className="inline-flex items-center gap-1 rounded border border-border bg-surface px-2.5 py-1.5 text-sm text-foreground hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-40"
+          className="inline-flex items-center gap-1 rounded-lg border border-border bg-surface px-2.5 py-1.5 text-sm text-foreground-secondary hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-40"
         >
           <ChevronLeft className="size-4" aria-hidden />
           Previous
@@ -53,8 +53,8 @@ export function Pagination({ pagination, onPageChange }: PaginationProps) {
               onClick={() => onPageChange(pageNumber)}
               className={
                 isActive
-                  ? "min-w-9 rounded border border-brand bg-brand px-2.5 py-1.5 text-sm font-medium text-foreground-inverse"
-                  : "min-w-9 rounded border border-border bg-surface px-2.5 py-1.5 text-sm text-foreground hover:bg-surface-muted"
+                  ? "min-w-9 rounded-lg border border-brand bg-brand px-2.5 py-1.5 text-sm font-medium text-foreground-inverse"
+                  : "min-w-9 rounded-lg border border-border bg-surface px-2.5 py-1.5 text-sm text-foreground-secondary hover:bg-surface-muted"
               }
             >
               {pageNumber}
@@ -67,7 +67,7 @@ export function Pagination({ pagination, onPageChange }: PaginationProps) {
           aria-label="Next page"
           disabled={!canNext}
           onClick={() => onPageChange(page + 1)}
-          className="inline-flex items-center gap-1 rounded border border-border bg-surface px-2.5 py-1.5 text-sm text-foreground hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-40"
+          className="inline-flex items-center gap-1 rounded-lg border border-border bg-surface px-2.5 py-1.5 text-sm text-foreground-secondary hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-40"
         >
           Next
           <ChevronRight className="size-4" aria-hidden />

@@ -27,7 +27,7 @@ export function DataTable<T>({
   isRowSelected,
 }: DataTableProps<T>) {
   return (
-    <div className="overflow-x-auto rounded-xl border border-border bg-surface shadow-card">
+    <div className="overflow-x-auto">
       <table className="w-full min-w-full border-collapse text-left text-sm">
         <thead>
           <tr className="border-b border-border">
@@ -36,7 +36,7 @@ export function DataTable<T>({
                 key={column.id}
                 scope="col"
                 className={[
-                  "px-5 py-3 text-xs font-medium text-foreground-muted",
+                  "px-4 py-3 text-[11px] font-medium tracking-[0.06em] text-foreground-muted uppercase",
                   column.align === "right" ? "text-right" : "text-left",
                   column.className,
                 ]
@@ -48,7 +48,7 @@ export function DataTable<T>({
             ))}
           </tr>
         </thead>
-        <tbody className="divide-y divide-border">
+        <tbody>
           {data.map((row) => {
             const selected = isRowSelected?.(row) ?? false;
             return (
@@ -57,15 +57,15 @@ export function DataTable<T>({
                 data-selected={selected ? "true" : undefined}
                 className={
                   selected
-                    ? "bg-brand-soft/60"
-                    : "bg-surface transition-colors hover:bg-surface-muted/70"
+                    ? "border-b border-border bg-brand-soft/50"
+                    : "border-b border-border bg-surface transition-colors last:border-b-0 hover:bg-surface-muted/60"
                 }
               >
                 {columns.map((column) => (
                   <td
                     key={column.id}
                     className={[
-                      "px-5 py-3.5 align-middle",
+                      "px-4 py-4 align-middle",
                       column.align === "right" ? "text-right" : "text-left",
                       column.muted
                         ? "text-foreground-secondary"

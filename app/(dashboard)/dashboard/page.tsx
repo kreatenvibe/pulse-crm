@@ -17,8 +17,8 @@ export default function DashboardPage() {
   const todayLabel = formatGreetingDate();
 
   return (
-    <div className="mx-auto flex w-full max-w-7xl flex-col gap-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+    <div className="flex w-full flex-col">
+      <div className="flex flex-col gap-4 border-b border-border px-5 py-6 sm:flex-row sm:items-end sm:justify-between sm:px-6 lg:px-8">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight text-foreground">
             {greeting}
@@ -27,8 +27,8 @@ export default function DashboardPage() {
             Overview of leads, customers, appointments, and recent activity.
           </p>
         </div>
-        <div className="inline-flex items-center gap-2 self-start rounded-xl border border-border bg-surface px-3.5 py-2 text-sm text-foreground-secondary shadow-card sm:self-auto">
-          <CalendarDays className="size-4 text-brand" aria-hidden />
+        <div className="inline-flex items-center gap-2 self-start text-sm text-foreground-secondary sm:self-auto">
+          <CalendarDays className="size-4 text-foreground-muted stroke-[1.5]" aria-hidden />
           <time dateTime={new Date().toISOString().slice(0, 10)}>
             {todayLabel}
           </time>
@@ -36,22 +36,34 @@ export default function DashboardPage() {
       </div>
 
       {loading ? (
-        <LoadingState message="Loading dashboard…" />
+        <div className="px-5 py-6 sm:px-6 lg:px-8">
+          <LoadingState message="Loading dashboard…" />
+        </div>
       ) : error ? (
-        <ErrorState message={error} />
+        <div className="px-5 py-6 sm:px-6 lg:px-8">
+          <ErrorState message={error} />
+        </div>
       ) : (
         <>
-          <DashboardSummary summary={data} />
-
-          <div className="grid gap-6 xl:grid-cols-2">
-            <PipelineOverview
-              byStatus={data.leads.byStatus}
-              total={data.leads.total}
-            />
-            <UpcomingAppointments appointments={data.upcomingAppointments} />
+          <div className="border-b border-border px-5 sm:px-6 lg:px-8">
+            <DashboardSummary summary={data} />
           </div>
 
-          <RecentActivity activities={data.recentActivities} />
+          <div className="grid border-b border-border xl:grid-cols-2">
+            <div className="border-b border-border px-5 py-6 sm:px-6 lg:px-8 xl:border-r xl:border-b-0">
+              <PipelineOverview
+                byStatus={data.leads.byStatus}
+                total={data.leads.total}
+              />
+            </div>
+            <div className="px-5 py-6 sm:px-6 lg:px-8">
+              <UpcomingAppointments appointments={data.upcomingAppointments} />
+            </div>
+          </div>
+
+          <div className="px-5 py-6 sm:px-6 lg:px-8">
+            <RecentActivity activities={data.recentActivities} />
+          </div>
         </>
       )}
     </div>

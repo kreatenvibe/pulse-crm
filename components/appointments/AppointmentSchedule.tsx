@@ -39,7 +39,7 @@ export function AppointmentSchedule({
       {groups.map((group) => (
         <section
           key={group.dateKey}
-          className="overflow-hidden rounded-xl border border-border bg-surface shadow-card"
+          className="border-y border-border"
         >
           <header className="border-b border-border bg-surface-muted/50 px-5 py-3">
             <h2 className="text-sm font-semibold text-foreground">

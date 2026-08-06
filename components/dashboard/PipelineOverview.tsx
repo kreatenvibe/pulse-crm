@@ -17,12 +17,13 @@ const STATUS_ORDER: LeadStatus[] = [
 ];
 
 const STATUS_PILL: Record<LeadStatus, string> = {
-  new: "bg-pipeline-new/15 text-pipeline-new",
-  contacted: "bg-pipeline-contacted/15 text-pipeline-contacted",
-  qualified: "bg-pipeline-qualified/15 text-pipeline-qualified",
-  appointment_scheduled: "bg-pipeline-appointment/15 text-pipeline-appointment",
-  converted: "bg-pipeline-converted/15 text-pipeline-converted",
-  lost: "bg-pipeline-lost/15 text-pipeline-lost",
+  new: "border-pipeline-new/40 text-pipeline-new",
+  contacted: "border-pipeline-contacted/40 text-pipeline-contacted",
+  qualified: "border-pipeline-qualified/40 text-pipeline-qualified",
+  appointment_scheduled:
+    "border-pipeline-appointment/40 text-pipeline-appointment",
+  converted: "border-pipeline-converted/40 text-pipeline-converted",
+  lost: "border-pipeline-lost/40 text-pipeline-lost",
 };
 
 const STATUS_BAR: Record<LeadStatus, string> = {
@@ -36,8 +37,8 @@ const STATUS_BAR: Record<LeadStatus, string> = {
 
 export function PipelineOverview({ byStatus, total }: PipelineOverviewProps) {
   return (
-    <section className="rounded-xl border border-border bg-surface shadow-card">
-      <div className="flex items-start justify-between gap-3 border-b border-border px-5 py-4">
+    <section>
+      <div className="flex items-start justify-between gap-3 border-b border-border pb-4">
         <div>
           <h2 className="text-sm font-semibold text-foreground">Lead pipeline</h2>
           <p className="mt-0.5 text-xs text-foreground-muted">Leads by status</p>
@@ -51,20 +52,20 @@ export function PipelineOverview({ byStatus, total }: PipelineOverviewProps) {
       </div>
 
       {total === 0 ? (
-        <div className="px-5 py-10 text-center text-sm text-foreground-muted">
+        <div className="py-10 text-center text-sm text-foreground-muted">
           No leads in the pipeline.
         </div>
       ) : (
-        <ul className="divide-y divide-border">
+        <ul>
           {STATUS_ORDER.map((status) => {
             const count = byStatus[status] ?? 0;
             const percent = total > 0 ? Math.round((count / total) * 100) : 0;
 
             return (
-              <li key={status} className="px-5 py-3.5">
+              <li key={status} className="border-b border-border py-3.5 last:border-b-0">
                 <div className="flex items-center justify-between gap-4 text-sm">
                   <span
-                    className={`inline-flex items-center rounded-md px-2.5 py-1 text-xs font-medium ${STATUS_PILL[status]}`}
+                    className={`inline-flex items-center rounded-md border bg-transparent px-2 py-0.5 text-[11px] font-medium tracking-wide uppercase ${STATUS_PILL[status]}`}
                   >
                     {formatLabel(status)} · {count}
                   </span>
@@ -72,7 +73,7 @@ export function PipelineOverview({ byStatus, total }: PipelineOverviewProps) {
                     {percent}%
                   </span>
                 </div>
-                <div className="mt-2.5 h-1.5 overflow-hidden rounded-full bg-surface-muted">
+                <div className="mt-2.5 h-1 overflow-hidden rounded-full bg-surface-muted">
                   <div
                     className={`h-full rounded-full ${STATUS_BAR[status]}`}
                     style={{ width: `${percent}%` }}

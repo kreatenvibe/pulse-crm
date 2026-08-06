@@ -26,43 +26,42 @@ export function CustomerFilters({
   onSortChange,
 }: CustomerFiltersProps) {
   return (
-    <div className="rounded-xl border border-border bg-surface p-3 shadow-card sm:p-4">
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:gap-4">
-        <SearchInput
-          id="customer-search"
-          label="Search customers"
-          value={search}
-          onChange={onSearchChange}
-          placeholder="Search by name, company, or contact"
-          className="w-full min-w-0 flex-1 lg:max-w-sm"
+    <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:gap-4">
+      <SearchInput
+        id="customer-search"
+        label="Search customers"
+        value={search}
+        onChange={onSearchChange}
+        placeholder="Search by name, company, or contact"
+        className="w-full min-w-0 flex-1 lg:max-w-sm"
+        hideLabel
+      />
+
+      <div className="flex flex-wrap items-end gap-3">
+        <SelectFilter
+          id="customer-lifecycle"
+          label="Lifecycle"
+          value={lifecycleStatus}
+          allLabel="All statuses"
+          options={CUSTOMER_LIFECYCLE_STATUSES.map((item) => ({
+            value: item,
+            label: formatLabel(item),
+          }))}
+          onChange={(value) =>
+            onLifecycleStatusChange(value as CustomerLifecycleStatus | "")
+          }
         />
 
-        <div className="flex flex-wrap items-end gap-3">
-          <SelectFilter
-            id="customer-lifecycle"
-            label="Lifecycle"
-            value={lifecycleStatus}
-            allLabel="All statuses"
-            options={CUSTOMER_LIFECYCLE_STATUSES.map((item) => ({
-              value: item,
-              label: formatLabel(item),
-            }))}
-            onChange={(value) =>
-              onLifecycleStatusChange(value as CustomerLifecycleStatus | "")
-            }
-          />
-
-          <SelectFilter
-            id="customer-sort"
-            label="Sort"
-            value={sort}
-            options={[
-              { value: "newest", label: "Newest first" },
-              { value: "oldest", label: "Oldest first" },
-            ]}
-            onChange={(value) => onSortChange(value as SortOrder)}
-          />
-        </div>
+        <SelectFilter
+          id="customer-sort"
+          label="Sort"
+          value={sort}
+          options={[
+            { value: "newest", label: "Newest first" },
+            { value: "oldest", label: "Oldest first" },
+          ]}
+          onChange={(value) => onSortChange(value as SortOrder)}
+        />
       </div>
     </div>
   );

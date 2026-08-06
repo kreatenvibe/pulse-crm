@@ -49,31 +49,43 @@ export default function CustomersPage() {
   }
 
   return (
-    <div className="mx-auto flex w-full max-w-7xl flex-col gap-6">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Customers</h1>
-        <p className="mt-1 text-sm text-zinc-500">
+    <div className="flex w-full flex-col">
+      <div className="border-b border-border px-5 py-6 sm:px-6 lg:px-8">
+        <h1 className="text-2xl font-semibold tracking-tight text-foreground">
+          Customers
+        </h1>
+        <p className="mt-1 text-sm text-foreground-muted">
           Search, filter, and review converted customers.
         </p>
       </div>
 
-      <CustomerFilters
-        search={search}
-        lifecycleStatus={lifecycleStatus}
-        sort={sort}
-        onSearchChange={setSearch}
-        onLifecycleStatusChange={setLifecycleStatus}
-        onSortChange={setSort}
-      />
+      <div className="border-b border-border px-5 py-4 sm:px-6 lg:px-8">
+        <CustomerFilters
+          search={search}
+          lifecycleStatus={lifecycleStatus}
+          sort={sort}
+          onSearchChange={setSearch}
+          onLifecycleStatusChange={setLifecycleStatus}
+          onSortChange={setSort}
+        />
+      </div>
 
       {loading ? (
-        <LoadingState message="Loading customers…" />
+        <div className="px-5 py-6 sm:px-6 lg:px-8">
+          <LoadingState message="Loading customers…" />
+        </div>
       ) : error ? (
-        <ErrorState message={error} />
+        <div className="px-5 py-6 sm:px-6 lg:px-8">
+          <ErrorState message={error} />
+        </div>
       ) : (
-        <div className="flex flex-col gap-4">
-          <CustomerTable customers={pageCustomers} />
-          <Pagination pagination={pagination} onPageChange={setPage} />
+        <div className="flex flex-col">
+          <div className="px-5 sm:px-6 lg:px-8">
+            <CustomerTable customers={pageCustomers} />
+          </div>
+          <div className="border-t border-border px-5 py-4 sm:px-6 lg:px-8">
+            <Pagination pagination={pagination} onPageChange={setPage} />
+          </div>
         </div>
       )}
     </div>

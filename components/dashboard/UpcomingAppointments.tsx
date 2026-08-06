@@ -7,11 +7,11 @@ type UpcomingAppointmentsProps = {
 };
 
 const STATUS_BADGE: Record<AppointmentStatus, string> = {
-  scheduled: "bg-info-soft text-info",
-  confirmed: "bg-success-soft text-success",
-  completed: "bg-neutral-soft text-neutral",
-  cancelled: "bg-danger-soft text-danger",
-  no_show: "bg-warning-soft text-warning",
+  scheduled: "border-info/35 text-info",
+  confirmed: "border-success/35 text-success",
+  completed: "border-border-strong text-neutral",
+  cancelled: "border-danger/35 text-danger",
+  no_show: "border-warning/40 text-warning",
 };
 
 function relatedLabel(appointment: AppointmentDto): string {
@@ -24,8 +24,8 @@ export function UpcomingAppointments({
   appointments,
 }: UpcomingAppointmentsProps) {
   return (
-    <section className="rounded-xl border border-border bg-surface shadow-card">
-      <div className="flex items-start justify-between gap-3 border-b border-border px-5 py-4">
+    <section>
+      <div className="flex items-start justify-between gap-3 border-b border-border pb-4">
         <div>
           <h2 className="text-sm font-semibold text-foreground">
             Upcoming appointments
@@ -43,24 +43,24 @@ export function UpcomingAppointments({
       </div>
 
       {appointments.length === 0 ? (
-        <div className="px-5 py-10 text-center text-sm text-foreground-muted">
+        <div className="py-10 text-center text-sm text-foreground-muted">
           No upcoming appointments.
         </div>
       ) : (
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[28rem] text-left text-sm">
+          <table className="w-full min-w-md text-left text-sm">
             <thead>
-              <tr className="border-b border-border text-xs text-foreground-muted">
-                <th className="px-5 py-3 font-medium">Time</th>
-                <th className="px-5 py-3 font-medium">Appointment</th>
-                <th className="px-5 py-3 font-medium">Related</th>
-                <th className="px-5 py-3 font-medium">Status</th>
+              <tr className="border-b border-border text-[11px] tracking-[0.06em] text-foreground-muted uppercase">
+                <th className="px-0 py-3 pr-4 font-medium">Time</th>
+                <th className="px-4 py-3 font-medium">Appointment</th>
+                <th className="px-4 py-3 font-medium">Related</th>
+                <th className="px-4 py-3 pl-4 font-medium">Status</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-border">
+            <tbody>
               {appointments.map((appointment) => (
-                <tr key={appointment.id}>
-                  <td className="whitespace-nowrap px-5 py-3.5 text-foreground-secondary">
+                <tr key={appointment.id} className="border-b border-border last:border-b-0">
+                  <td className="whitespace-nowrap py-4 pr-4 text-foreground-secondary">
                     <div className="tabular-nums">
                       {formatTimeRange(appointment.start, appointment.end)}
                     </div>
@@ -68,7 +68,7 @@ export function UpcomingAppointments({
                       {formatDate(appointment.start)}
                     </div>
                   </td>
-                  <td className="px-5 py-3.5">
+                  <td className="px-4 py-4">
                     <p className="font-medium text-foreground">
                       {appointment.title}
                     </p>
@@ -76,12 +76,12 @@ export function UpcomingAppointments({
                       Assigned to {appointment.assignedTo}
                     </p>
                   </td>
-                  <td className="px-5 py-3.5 text-foreground-secondary">
+                  <td className="px-4 py-4 text-foreground-secondary">
                     {relatedLabel(appointment)}
                   </td>
-                  <td className="px-5 py-3.5">
+                  <td className="py-4 pl-4">
                     <span
-                      className={`inline-flex rounded-md px-2 py-1 text-xs font-medium ${STATUS_BADGE[appointment.status]}`}
+                      className={`inline-flex rounded-md border bg-transparent px-2 py-0.5 text-[11px] font-medium tracking-wide uppercase ${STATUS_BADGE[appointment.status]}`}
                     >
                       {formatLabel(appointment.status)}
                     </span>

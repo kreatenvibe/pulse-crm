@@ -34,7 +34,7 @@ export function SearchInput({
       )}
       <div className="relative">
         <Search
-          className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-brand"
+          className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-foreground-muted stroke-[1.5]"
           aria-hidden
         />
         <input
@@ -44,7 +44,7 @@ export function SearchInput({
           onChange={(event) => onChange(event.target.value)}
           placeholder={placeholder}
           aria-label={hideLabel ? label : undefined}
-          className="w-full rounded-lg border border-border bg-surface py-2 pr-3 pl-9 text-sm text-foreground shadow-card outline-none placeholder:text-foreground-muted transition-[border-color,box-shadow] hover:border-border-strong focus:border-brand focus:ring-2 focus:ring-ring/20"
+          className="h-9 w-full rounded-lg border border-border bg-surface py-2 pr-3 pl-9 text-sm text-foreground outline-none placeholder:text-foreground-muted transition-[border-color,box-shadow] hover:border-border-strong focus:border-brand focus:ring-2 focus:ring-ring/20"
         />
       </div>
     </div>

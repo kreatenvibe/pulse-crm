@@ -59,7 +59,7 @@ export function LeadTable({ leads }: LeadTableProps) {
           id: "name",
           header: "Name",
           cell: (lead) => (
-            <Truncate value={lead.name} className="font-medium text-foreground" />
+            <Truncate value={lead.name} className="font-semibold text-foreground" />
           ),
         },
         {
@@ -110,7 +110,7 @@ export function LeadTable({ leads }: LeadTableProps) {
           header: "Assigned",
           muted: true,
           cell: (lead) => (
-            <Truncate value={lead.assignedTo} className="max-w-32" />
+            <Truncate value={lead.assignedTo} className="max-w-32 font-medium text-foreground" />
           ),
         },
         {
@@ -129,7 +129,9 @@ export function LeadTable({ leads }: LeadTableProps) {
           align: "right",
           cell: (lead) => (
             <Link href={`/leads/${lead.id}`}>
-              <Button size="sm">View</Button>
+              <Button size="sm" variant="ghost">
+                View
+              </Button>
             </Link>
           ),
         },

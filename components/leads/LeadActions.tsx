@@ -21,6 +21,9 @@ type LeadActionsProps = {
   onConvertLead: () => Promise<boolean>;
 };
 
+const inputClassName =
+  "w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground outline-none transition-[border-color,box-shadow] hover:border-border-strong focus:border-brand focus:ring-2 focus:ring-ring/20 disabled:opacity-40";
+
 function toLocalInputValue(date: Date): string {
   const pad = (value: number) => String(value).padStart(2, "0");
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
@@ -105,15 +108,20 @@ export function LeadActions({
   }
 
   return (
-    <section className="rounded border border-zinc-200 p-4">
-      <h2 className="text-sm font-semibold">Actions</h2>
-      <p className="mt-1 text-xs text-zinc-500">
-        Update this lead without leaving the page.
-      </p>
+    <section className="h-full lg:sticky lg:top-0">
+      <div className="border-b border-border px-5 py-4 sm:px-6">
+        <h2 className="text-sm font-semibold text-foreground">Actions</h2>
+        <p className="mt-0.5 text-xs text-foreground-muted">
+          Update this lead without leaving the page.
+        </p>
+      </div>
 
-      <div className="mt-4 space-y-6">
+      <div className="space-y-6 px-5 py-5 sm:px-6">
         <div className="space-y-2">
-          <label htmlFor="lead-status-action" className="text-sm font-medium">
+          <label
+            htmlFor="lead-status-action"
+            className="text-sm font-medium text-foreground"
+          >
             Change status
           </label>
           <div className="flex flex-wrap items-center gap-2">
@@ -122,7 +130,7 @@ export function LeadActions({
               value={status}
               onChange={(event) => setStatus(event.target.value as LeadStatus)}
               disabled={actionLoading}
-              className="rounded border border-zinc-300 bg-transparent px-3 py-2 text-sm outline-none focus:border-zinc-500"
+              className={`${inputClassName} w-auto min-w-[8.5rem]`}
             >
               {LEAD_STATUSES.map((item) => (
                 <option key={item} value={item}>
@@ -132,6 +140,7 @@ export function LeadActions({
             </select>
             <Button
               size="sm"
+              variant="primary"
               disabled={actionLoading || status === currentStatus}
               onClick={() => void handleStatusSave()}
             >
@@ -140,8 +149,11 @@ export function LeadActions({
           </div>
         </div>
 
-        <div className="space-y-2">
-          <label htmlFor="lead-note" className="text-sm font-medium">
+        <div className="space-y-2 border-t border-border pt-6">
+          <label
+            htmlFor="lead-note"
+            className="text-sm font-medium text-foreground"
+          >
             Add note
           </label>
           <textarea
@@ -151,7 +163,7 @@ export function LeadActions({
             onChange={(event) => setNote(event.target.value)}
             disabled={actionLoading}
             placeholder="Call summary, next steps, etc."
-            className="w-full rounded border border-zinc-300 bg-transparent px-3 py-2 text-sm outline-none focus:border-zinc-500"
+            className={inputClassName}
           />
           <Button
             size="sm"
@@ -162,35 +174,37 @@ export function LeadActions({
           </Button>
         </div>
 
-        <div className="space-y-2">
-          <p className="text-sm font-medium">Schedule appointment</p>
+        <div className="space-y-2 border-t border-border pt-6">
+          <p className="text-sm font-medium text-foreground">
+            Schedule appointment
+          </p>
           <input
             type="text"
             value={appointmentTitle}
             onChange={(event) => setAppointmentTitle(event.target.value)}
             disabled={actionLoading}
             placeholder="Title"
-            className="w-full rounded border border-zinc-300 bg-transparent px-3 py-2 text-sm outline-none focus:border-zinc-500"
+            className={inputClassName}
           />
-          <div className="grid gap-2 sm:grid-cols-2">
-            <label className="flex flex-col gap-1 text-xs text-zinc-500">
+          <div className="grid gap-2">
+            <label className="flex flex-col gap-1 text-xs text-foreground-muted">
               Start
               <input
                 type="datetime-local"
                 value={appointmentStart}
                 onChange={(event) => setAppointmentStart(event.target.value)}
                 disabled={actionLoading}
-                className="rounded border border-zinc-300 bg-transparent px-3 py-2 text-sm outline-none focus:border-zinc-500"
+                className={inputClassName}
               />
             </label>
-            <label className="flex flex-col gap-1 text-xs text-zinc-500">
+            <label className="flex flex-col gap-1 text-xs text-foreground-muted">
               End
               <input
                 type="datetime-local"
                 value={appointmentEnd}
                 onChange={(event) => setAppointmentEnd(event.target.value)}
                 disabled={actionLoading}
-                className="rounded border border-zinc-300 bg-transparent px-3 py-2 text-sm outline-none focus:border-zinc-500"
+                className={inputClassName}
               />
             </label>
           </div>
@@ -203,13 +217,14 @@ export function LeadActions({
           </Button>
         </div>
 
-        <div className="space-y-2 border-t border-zinc-200 pt-4">
-          <p className="text-sm font-medium">Convert lead</p>
-          <p className="text-xs text-zinc-500">
+        <div className="space-y-2 border-t border-border pt-6">
+          <p className="text-sm font-medium text-foreground">Convert lead</p>
+          <p className="text-xs text-foreground-muted">
             Creates a customer from this lead and marks status as converted.
           </p>
           <Button
             size="sm"
+            variant="outline-brand"
             disabled={actionLoading || isConverted}
             onClick={() => void handleConvert()}
           >
@@ -218,9 +233,11 @@ export function LeadActions({
         </div>
 
         {actionError ? (
-          <p className="text-sm text-red-600">{actionError}</p>
+          <p className="text-sm text-danger">{actionError}</p>
         ) : null}
-        {message ? <p className="text-sm text-zinc-600">{message}</p> : null}
+        {message ? (
+          <p className="text-sm text-foreground-secondary">{message}</p>
+        ) : null}
       </div>
     </section>
   );

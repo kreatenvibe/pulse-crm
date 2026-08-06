@@ -1,6 +1,16 @@
-import { EmptyState } from "@/components/ui";
+import {
+  Calendar,
+  Mail,
+  MessageCircle,
+  NotebookPen,
+  Phone,
+  RefreshCw,
+  UserPlus,
+  UserRoundPlus,
+  type LucideIcon,
+} from "lucide-react";
 import { formatDateTime, formatLabel } from "@/lib/format";
-import type { ActivityDto } from "@/types/activity";
+import type { ActivityDto, ActivityType } from "@/types/activity";
 import type { NoteDto } from "@/types/note";
 
 type LeadTimelineProps = {
@@ -11,6 +21,44 @@ type LeadTimelineProps = {
 type TimelineItem =
   | { kind: "activity"; at: string; id: string; activity: ActivityDto }
   | { kind: "note"; at: string; id: string; note: NoteDto };
+
+const ACTIVITY_STYLE: Record<
+  ActivityType,
+  { icon: LucideIcon; iconColor: string }
+> = {
+  call: {
+    icon: Phone,
+    iconColor: "text-info",
+  },
+  email: {
+    icon: Mail,
+    iconColor: "text-brand",
+  },
+  whatsapp: {
+    icon: MessageCircle,
+    iconColor: "text-success",
+  },
+  meeting: {
+    icon: Calendar,
+    iconColor: "text-warning",
+  },
+  status_change: {
+    icon: RefreshCw,
+    iconColor: "text-brand",
+  },
+  created: {
+    icon: UserPlus,
+    iconColor: "text-success",
+  },
+  updated: {
+    icon: RefreshCw,
+    iconColor: "text-neutral",
+  },
+  assigned: {
+    icon: UserRoundPlus,
+    iconColor: "text-info",
+  },
+};
 
 export function LeadTimeline({ activities, notes }: LeadTimelineProps) {
   const items: TimelineItem[] = [
@@ -29,42 +77,69 @@ export function LeadTimeline({ activities, notes }: LeadTimelineProps) {
   ].sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime());
 
   return (
-    <section className="rounded border border-zinc-200">
-      <div className="border-b border-zinc-200 px-4 py-3">
-        <h2 className="text-sm font-semibold">Timeline</h2>
-        <p className="text-xs text-zinc-500">Activities and notes</p>
+    <section className="border-b border-border">
+      <div className="border-b border-border px-5 py-4 sm:px-6">
+        <h2 className="text-sm font-semibold text-foreground">Timeline</h2>
+        <p className="mt-0.5 text-xs text-foreground-muted">
+          Activities and notes
+        </p>
       </div>
 
       {items.length === 0 ? (
-        <EmptyState message="No timeline events yet." />
+        <div className="px-5 py-10 text-center text-sm text-foreground-muted sm:px-6">
+          No timeline events yet.
+        </div>
       ) : (
-        <ul className="divide-y divide-zinc-200">
-          {items.map((item) =>
-            item.kind === "activity" ? (
-              <li key={item.id} className="px-4 py-3">
-                <div className="flex items-start justify-between gap-3">
-                  <p className="text-sm">{item.activity.description}</p>
-                  <span className="shrink-0 text-xs text-zinc-500">
-                    {formatLabel(item.activity.type)}
+        <ul>
+          {items.map((item) => {
+            if (item.kind === "activity") {
+              const style = ACTIVITY_STYLE[item.activity.type];
+              const Icon = style.icon;
+
+              return (
+                <li
+                  key={item.id}
+                  className="flex items-start gap-3 border-b border-border px-5 py-3.5 last:border-b-0 sm:px-6"
+                >
+                  <span
+                    className={`mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-md bg-surface-muted ${style.iconColor}`}
+                  >
+                    <Icon className="size-4 stroke-[1.5]" aria-hidden />
                   </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm text-foreground">
+                      {item.activity.description}
+                    </p>
+                    <p className="mt-0.5 text-xs text-foreground-muted">
+                      {formatLabel(item.activity.type)} ·{" "}
+                      {formatDateTime(item.activity.timestamp)} ·{" "}
+                      {item.activity.performedBy}
+                    </p>
+                  </div>
+                </li>
+              );
+            }
+
+            return (
+              <li
+                key={item.id}
+                className="flex items-start gap-3 border-b border-border px-5 py-3.5 last:border-b-0 sm:px-6"
+              >
+                <span className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-md bg-surface-muted text-neutral">
+                  <NotebookPen className="size-4 stroke-[1.5]" aria-hidden />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm whitespace-pre-wrap text-foreground">
+                    {item.note.content}
+                  </p>
+                  <p className="mt-0.5 text-xs text-foreground-muted">
+                    Note · {formatDateTime(item.note.createdAt)} ·{" "}
+                    {item.note.createdBy}
+                  </p>
                 </div>
-                <p className="mt-1 text-xs text-zinc-500">
-                  {formatDateTime(item.activity.timestamp)} ·{" "}
-                  {item.activity.performedBy}
-                </p>
               </li>
-            ) : (
-              <li key={item.id} className="px-4 py-3">
-                <div className="flex items-start justify-between gap-3">
-                  <p className="text-sm whitespace-pre-wrap">{item.note.content}</p>
-                  <span className="shrink-0 text-xs text-zinc-500">Note</span>
-                </div>
-                <p className="mt-1 text-xs text-zinc-500">
-                  {formatDateTime(item.note.createdAt)} · {item.note.createdBy}
-                </p>
-              </li>
-            ),
-          )}
+            );
+          })}
         </ul>
       )}
     </section>

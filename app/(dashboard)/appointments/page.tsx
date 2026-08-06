@@ -81,7 +81,7 @@ export default function AppointmentsPage() {
       : "No appointments in this month match your filters.";
 
   return (
-    <div className="mx-auto flex w-full max-w-7xl flex-col gap-6">
+    <div className="flex w-full flex-col gap-6 px-5 py-6 sm:px-6 lg:px-8">
       <div>
         <h1 className="text-2xl font-semibold tracking-tight text-foreground">
           Appointments

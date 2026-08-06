@@ -3,14 +3,34 @@ export type NavItem = {
   href: string;
 };
 
-export const mainNavItems: NavItem[] = [
-  { label: "Dashboard", href: "/dashboard" },
-  { label: "Leads", href: "/leads" },
-  { label: "Customers", href: "/customers" },
-  { label: "Appointments", href: "/appointments" },
-  { label: "Tasks", href: "/tasks" },
-  { label: "Reports", href: "/reports" },
+export type NavGroup = {
+  id: string;
+  label: string;
+  items: NavItem[];
+};
+
+/** Primary workspace navigation, grouped for sidebar section headers. */
+export const navGroups: NavGroup[] = [
+  {
+    id: "operations",
+    label: "Sales operations",
+    items: [
+      { label: "Dashboard", href: "/dashboard" },
+      { label: "Leads", href: "/leads" },
+      { label: "Customers", href: "/customers" },
+      { label: "Appointments", href: "/appointments" },
+      { label: "Tasks", href: "/tasks" },
+    ],
+  },
+  {
+    id: "insights",
+    label: "Insights & management",
+    items: [{ label: "Reports", href: "/reports" }],
+  },
 ];
+
+/** Flat list kept for any callers that need all main links. */
+export const mainNavItems: NavItem[] = navGroups.flatMap((group) => group.items);
 
 export const settingsNavItem: NavItem = {
   label: "Settings",

@@ -21,26 +21,34 @@ export default function CustomerDetailsPage() {
   const { data, loading, error } = useCustomerDetails(id);
 
   return (
-    <div className="mx-auto flex w-full max-w-7xl flex-col gap-6">
-      <p className="text-sm text-foreground-muted">
-        <Link
-          href="/customers"
-          className="text-brand hover:text-brand-hover hover:underline"
-        >
-          Customers
-        </Link>
-        <span className="mx-1.5 text-foreground-muted">/</span>
-        <span className="text-foreground-secondary">
-          {data?.customer.primaryContact ?? id}
-        </span>
-      </p>
+    <div className="flex w-full flex-col">
+      <div className="border-b border-border px-5 py-5 sm:px-6 lg:px-8">
+        <p className="text-sm text-foreground-muted">
+          <Link
+            href="/customers"
+            className="text-brand hover:text-brand-hover hover:underline"
+          >
+            Customers
+          </Link>
+          <span className="mx-1.5 text-foreground-muted">/</span>
+          <span className="text-foreground-secondary">
+            {data?.customer.primaryContact ?? id}
+          </span>
+        </p>
+      </div>
 
       {loading ? (
-        <LoadingState message="Loading customer…" />
+        <div className="px-5 py-6 sm:px-6 lg:px-8">
+          <LoadingState message="Loading customer…" />
+        </div>
       ) : error ? (
-        <ErrorState message={error} />
+        <div className="px-5 py-6 sm:px-6 lg:px-8">
+          <ErrorState message={error} />
+        </div>
       ) : !data ? (
-        <EmptyState message="Customer not found." />
+        <div className="px-5 py-6 sm:px-6 lg:px-8">
+          <EmptyState message="Customer not found." />
+        </div>
       ) : (
         <>
           <CustomerProfile
@@ -61,17 +69,23 @@ export default function CustomerDetailsPage() {
             notes={data.notes}
           />
 
-          <div className="grid items-start gap-6 lg:grid-cols-2">
-            <RelatedTasks
-              tasks={data.tasks}
-              emptyMessage="No tasks for this customer."
-            />
-            <CustomerAppointments appointments={data.appointments} />
-          </div>
-
-          <div className="grid items-start gap-6 lg:grid-cols-2">
-            <CustomerServices services={data.services} />
-            <CustomerInvoices invoices={data.invoices} />
+          {/* Single 2-col grid: equal-height row cells, no staggered masonry */}
+          <div className="grid lg:grid-cols-2">
+            <div className="border-b border-border lg:border-r">
+              <RelatedTasks
+                tasks={data.tasks}
+                emptyMessage="No tasks for this customer."
+              />
+            </div>
+            <div className="border-b border-border">
+              <CustomerAppointments appointments={data.appointments} />
+            </div>
+            <div className="border-b border-border lg:border-r lg:border-b-0">
+              <CustomerServices services={data.services} />
+            </div>
+            <div className="border-b border-border lg:border-b-0">
+              <CustomerInvoices invoices={data.invoices} />
+            </div>
           </div>
         </>
       )}
