@@ -1,11 +1,8 @@
 import { BaseEntity, ID, type WithIsoDates } from "./common";
+import type { InvoiceStatus } from "@/lib/schemas/enums";
 
-export type InvoiceStatus =
-  | "draft"
-  | "sent"
-  | "paid"
-  | "overdue"
-  | "cancelled";
+// Source of truth: lib/schemas/enums.ts.
+export type { InvoiceStatus };
 
 export interface Invoice extends BaseEntity {
   customerId: ID;

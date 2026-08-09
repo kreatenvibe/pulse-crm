@@ -1,138 +1,141 @@
-import { activities } from "@/data/activities";
+import { prisma } from "@/lib/prisma";
+import { Prisma } from "@/lib/generated/prisma/client";
+import type { activities as ActivityRow } from "@/lib/generated/prisma/client";
 import type { EntityType, ID } from "@/types/common";
 import type { Activity, ActivityType } from "@/types/activity";
+import {
+  CreateActivitySchema,
+  UpdateActivitySchema,
+  type CreateActivityInput,
+  type UpdateActivityInput,
+} from "@/lib/schemas/activity.schema";
 import { nextId, now } from "./helpers";
 import {
   assertEntityReference,
-  assertEnum,
-  assertRequiredString,
   assertUserId,
-  toDate,
+  parseInput,
 } from "./validation";
 
-export type CreateActivityInput = Omit<
-  Activity,
-  "id" | "createdAt" | "updatedAt"
->;
-export type UpdateActivityInput = Partial<CreateActivityInput>;
+export type { CreateActivityInput, UpdateActivityInput };
 
-const ACTIVITY_TYPES: ActivityType[] = [
-  "call",
-  "email",
-  "whatsapp",
-  "meeting",
-  "status_change",
-  "created",
-  "updated",
-  "assigned",
-];
+/** Stable order: zero-padded ids sort identically to the original /data array. */
+const ORDER_BY_ID = { id: "asc" } as const;
 
-const ENTITY_TYPES: EntityType[] = [
-  "lead",
-  "customer",
-  "appointment",
-  "task",
-  "service",
-  "invoice",
-  "note",
-];
-
-function validateCreateInput(data: CreateActivityInput): CreateActivityInput {
-  const entityType = assertEnum(data.entityType, ENTITY_TYPES, "entityType");
-  const entityId = assertRequiredString(data.entityId, "entityId");
-  assertEntityReference(entityType, entityId);
-
+/** Map a Prisma `activities` row (snake_case, nullable) to the domain `Activity`. */
+function toActivity(row: ActivityRow): Activity {
   return {
-    entityType,
-    entityId,
-    type: assertEnum(data.type, ACTIVITY_TYPES, "type"),
-    description: assertRequiredString(data.description, "description"),
-    performedBy: assertUserId(data.performedBy, "performedBy"),
-    timestamp: toDate(data.timestamp, "timestamp"),
+    id: row.id,
+    entityType: row.entity_type as EntityType,
+    entityId: row.entity_id,
+    type: row.type as ActivityType,
+    description: row.description,
+    performedBy: row.performed_by,
+    timestamp: row.occurred_at,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
   };
 }
 
-function validateUpdateInput(data: UpdateActivityInput): UpdateActivityInput {
-  const validated: UpdateActivityInput = {};
+/** Translate a validated partial update into a Prisma column patch. */
+function toUpdatePatch(
+  validated: UpdateActivityInput,
+): Prisma.activitiesUncheckedUpdateInput {
+  const patch: Prisma.activitiesUncheckedUpdateInput = { updated_at: now() };
 
-  if ("entityType" in data && data.entityType !== undefined) {
-    validated.entityType = assertEnum(data.entityType, ENTITY_TYPES, "entityType");
-  }
-  if ("entityId" in data && data.entityId !== undefined) {
-    validated.entityId = assertRequiredString(data.entityId, "entityId");
-  }
-  if (validated.entityType && validated.entityId) {
-    assertEntityReference(validated.entityType, validated.entityId);
-  }
-  if ("type" in data && data.type !== undefined) {
-    validated.type = assertEnum(data.type, ACTIVITY_TYPES, "type");
-  }
-  if ("description" in data && data.description !== undefined) {
-    validated.description = assertRequiredString(
-      data.description,
-      "description",
-    );
-  }
-  if ("performedBy" in data && data.performedBy !== undefined) {
-    validated.performedBy = assertUserId(data.performedBy, "performedBy");
-  }
-  if ("timestamp" in data && data.timestamp !== undefined) {
-    validated.timestamp = toDate(data.timestamp, "timestamp");
-  }
+  if ("entityType" in validated) patch.entity_type = validated.entityType;
+  if ("entityId" in validated) patch.entity_id = validated.entityId;
+  if ("type" in validated) patch.type = validated.type;
+  if ("description" in validated) patch.description = validated.description;
+  if ("performedBy" in validated) patch.performed_by = validated.performedBy;
+  if ("timestamp" in validated) patch.occurred_at = validated.timestamp;
 
-  return validated;
+  return patch;
 }
 
 class ActivityService {
   async getAll(): Promise<Activity[]> {
-    return [...activities];
+    const rows = await prisma.activities.findMany({ orderBy: ORDER_BY_ID });
+    return rows.map(toActivity);
   }
 
   async getById(id: ID): Promise<Activity | null> {
-    return activities.find((activity) => activity.id === id) ?? null;
+    const row = await prisma.activities.findUnique({ where: { id } });
+    return row ? toActivity(row) : null;
   }
 
   async create(data: CreateActivityInput): Promise<Activity> {
-    const validated = validateCreateInput(data);
+    const input = parseInput(CreateActivitySchema, data);
+    await assertEntityReference(input.entityType, input.entityId);
+    const performedBy = await assertUserId(input.performedBy, "performedBy");
     const timestamp = now();
-    const activity: Activity = {
-      ...validated,
-      id: nextId("act", activities),
-      createdAt: timestamp,
-      updatedAt: timestamp,
-    };
-    activities.push(activity);
-    return activity;
+
+    const existing = await prisma.activities.findMany({ select: { id: true } });
+    const id = nextId("act", existing);
+
+    const row = await prisma.activities.create({
+      data: {
+        id,
+        entity_type: input.entityType,
+        entity_id: input.entityId,
+        type: input.type,
+        description: input.description,
+        performed_by: performedBy,
+        occurred_at: input.timestamp,
+        created_at: timestamp,
+        updated_at: timestamp,
+      },
+    });
+
+    return toActivity(row);
   }
 
   async update(id: ID, data: UpdateActivityInput): Promise<Activity | null> {
-    const index = activities.findIndex((activity) => activity.id === id);
-    if (index === -1) return null;
+    const previous = await this.getById(id);
+    if (!previous) return null;
 
-    const validated = validateUpdateInput(data);
-    const updated: Activity = {
-      ...activities[index],
-      ...validated,
-      id,
-      updatedAt: now(),
-    };
-    activities[index] = updated;
-    return updated;
+    const validated = parseInput(UpdateActivitySchema, data);
+    if (validated.entityType !== undefined && validated.entityId !== undefined) {
+      await assertEntityReference(validated.entityType, validated.entityId);
+    }
+    if (validated.performedBy !== undefined) {
+      validated.performedBy = await assertUserId(
+        validated.performedBy,
+        "performedBy",
+      );
+    }
+    const row = await prisma.activities.update({
+      where: { id },
+      data: toUpdatePatch(validated),
+    });
+
+    return toActivity(row);
   }
 
   async delete(id: ID): Promise<boolean> {
-    const index = activities.findIndex((activity) => activity.id === id);
-    if (index === -1) return false;
-    activities.splice(index, 1);
+    const existing = await prisma.activities.findUnique({
+      where: { id },
+      select: { id: true },
+    });
+    if (!existing) return false;
+
+    await prisma.activities.delete({ where: { id } });
     return true;
   }
 
   async getByType(type: ActivityType): Promise<Activity[]> {
-    return activities.filter((activity) => activity.type === type);
+    const rows = await prisma.activities.findMany({
+      where: { type },
+      orderBy: ORDER_BY_ID,
+    });
+    return rows.map(toActivity);
   }
 
   async getByPerformer(userId: ID): Promise<Activity[]> {
-    return activities.filter((activity) => activity.performedBy === userId);
+    const rows = await prisma.activities.findMany({
+      where: { performed_by: userId },
+      orderBy: ORDER_BY_ID,
+    });
+    return rows.map(toActivity);
   }
 
   /** Timeline for one entity, newest first. */
@@ -140,18 +143,19 @@ class ActivityService {
     entityType: EntityType,
     entityId: ID,
   ): Promise<Activity[]> {
-    return activities
-      .filter(
-        (activity) =>
-          activity.entityType === entityType && activity.entityId === entityId,
-      )
-      .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+    const rows = await prisma.activities.findMany({
+      where: { entity_type: entityType, entity_id: entityId },
+      orderBy: { occurred_at: "desc" },
+    });
+    return rows.map(toActivity);
   }
 
   async getRecent(limit = 20): Promise<Activity[]> {
-    return [...activities]
-      .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
-      .slice(0, limit);
+    const rows = await prisma.activities.findMany({
+      orderBy: { occurred_at: "desc" },
+      take: limit,
+    });
+    return rows.map(toActivity);
   }
 }
 

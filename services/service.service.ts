@@ -1,123 +1,139 @@
-import { services } from "@/data/services";
+import { prisma } from "@/lib/prisma";
+import { Prisma } from "@/lib/generated/prisma/client";
+import type { services as ServiceRow } from "@/lib/generated/prisma/client";
 import type { ID } from "@/types/common";
 import type { Service, ServiceStatus } from "@/types/service";
-import { nextId, now } from "./helpers";
 import {
-  assertCustomerId,
-  assertEnum,
-  assertOptionalString,
-  assertRequiredString,
-  toOptionalDate,
-} from "./validation";
+  CreateServiceSchema,
+  UpdateServiceSchema,
+  type CreateServiceInput,
+  type UpdateServiceInput,
+} from "@/lib/schemas/service.schema";
+import { nextId, now } from "./helpers";
+import { assertCustomerId, parseInput } from "./validation";
 
-export type CreateServiceInput = Omit<
-  Service,
-  "id" | "createdAt" | "updatedAt"
->;
-export type UpdateServiceInput = Partial<CreateServiceInput>;
+export type { CreateServiceInput, UpdateServiceInput };
 
-const SERVICE_STATUSES: ServiceStatus[] = [
-  "planned",
-  "in_progress",
-  "completed",
-  "cancelled",
-];
+/** Stable order: zero-padded ids sort identically to the original /data array. */
+const ORDER_BY_ID = { id: "asc" } as const;
 
-function validateCreateInput(data: CreateServiceInput): CreateServiceInput {
+/** Map a Prisma `services` row (snake_case, nullable) to the domain `Service`. */
+function toService(row: ServiceRow): Service {
   return {
-    customerId: assertCustomerId(data.customerId),
-    title: assertRequiredString(data.title, "title"),
-    description: assertOptionalString(data.description, "description"),
-    status: assertEnum(data.status, SERVICE_STATUSES, "status"),
-    scheduledDate: toOptionalDate(data.scheduledDate, "scheduledDate"),
+    id: row.id,
+    customerId: row.customer_id,
+    title: row.title,
+    description: row.description ?? undefined,
+    status: row.status as ServiceStatus,
+    scheduledDate: row.scheduled_date ?? undefined,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
   };
 }
 
-function validateUpdateInput(data: UpdateServiceInput): UpdateServiceInput {
-  const validated: UpdateServiceInput = {};
+/** Translate a validated partial update into a Prisma column patch. */
+function toUpdatePatch(
+  validated: UpdateServiceInput,
+): Prisma.servicesUncheckedUpdateInput {
+  const patch: Prisma.servicesUncheckedUpdateInput = { updated_at: now() };
 
-  if ("customerId" in data && data.customerId !== undefined) {
-    validated.customerId = assertCustomerId(data.customerId);
+  if ("customerId" in validated) patch.customer_id = validated.customerId;
+  if ("title" in validated) patch.title = validated.title;
+  if ("description" in validated) {
+    patch.description = validated.description ?? null;
   }
-  if ("title" in data && data.title !== undefined) {
-    validated.title = assertRequiredString(data.title, "title");
-  }
-  if ("description" in data) {
-    validated.description = assertOptionalString(
-      data.description,
-      "description",
-    );
-  }
-  if ("status" in data && data.status !== undefined) {
-    validated.status = assertEnum(data.status, SERVICE_STATUSES, "status");
-  }
-  if ("scheduledDate" in data) {
-    validated.scheduledDate = toOptionalDate(
-      data.scheduledDate,
-      "scheduledDate",
-    );
+  if ("status" in validated) patch.status = validated.status;
+  if ("scheduledDate" in validated) {
+    patch.scheduled_date = validated.scheduledDate ?? null;
   }
 
-  return validated;
+  return patch;
 }
 
 class ServiceService {
   async getAll(): Promise<Service[]> {
-    return [...services];
+    const rows = await prisma.services.findMany({ orderBy: ORDER_BY_ID });
+    return rows.map(toService);
   }
 
   async getById(id: ID): Promise<Service | null> {
-    return services.find((service) => service.id === id) ?? null;
+    const row = await prisma.services.findUnique({ where: { id } });
+    return row ? toService(row) : null;
   }
 
   async create(data: CreateServiceInput): Promise<Service> {
-    const validated = validateCreateInput(data);
+    const input = parseInput(CreateServiceSchema, data);
+    const customerId = await assertCustomerId(input.customerId);
     const timestamp = now();
-    const service: Service = {
-      ...validated,
-      id: nextId("svc", services),
-      createdAt: timestamp,
-      updatedAt: timestamp,
-    };
-    services.push(service);
-    return service;
+
+    const existing = await prisma.services.findMany({ select: { id: true } });
+    const id = nextId("svc", existing);
+
+    const row = await prisma.services.create({
+      data: {
+        id,
+        customer_id: customerId,
+        title: input.title,
+        description: input.description ?? null,
+        status: input.status,
+        scheduled_date: input.scheduledDate ?? null,
+        created_at: timestamp,
+        updated_at: timestamp,
+      },
+    });
+
+    return toService(row);
   }
 
   async update(id: ID, data: UpdateServiceInput): Promise<Service | null> {
-    const index = services.findIndex((service) => service.id === id);
-    if (index === -1) return null;
+    const previous = await this.getById(id);
+    if (!previous) return null;
 
-    const validated = validateUpdateInput(data);
-    const updated: Service = {
-      ...services[index],
-      ...validated,
-      id,
-      updatedAt: now(),
-    };
-    services[index] = updated;
-    return updated;
+    const validated = parseInput(UpdateServiceSchema, data);
+    if (validated.customerId !== undefined) {
+      validated.customerId = await assertCustomerId(validated.customerId);
+    }
+    const row = await prisma.services.update({
+      where: { id },
+      data: toUpdatePatch(validated),
+    });
+
+    return toService(row);
   }
 
   async delete(id: ID): Promise<boolean> {
-    const index = services.findIndex((service) => service.id === id);
-    if (index === -1) return false;
-    services.splice(index, 1);
+    const existing = await prisma.services.findUnique({
+      where: { id },
+      select: { id: true },
+    });
+    if (!existing) return false;
+
+    await prisma.services.delete({ where: { id } });
     return true;
   }
 
   async getByCustomerId(customerId: ID): Promise<Service[]> {
-    return services.filter((service) => service.customerId === customerId);
+    const rows = await prisma.services.findMany({
+      where: { customer_id: customerId },
+      orderBy: ORDER_BY_ID,
+    });
+    return rows.map(toService);
   }
 
   async getByStatus(status: ServiceStatus): Promise<Service[]> {
-    return services.filter((service) => service.status === status);
+    const rows = await prisma.services.findMany({
+      where: { status },
+      orderBy: ORDER_BY_ID,
+    });
+    return rows.map(toService);
   }
 
   async getActive(): Promise<Service[]> {
-    return services.filter(
-      (service) =>
-        service.status === "planned" || service.status === "in_progress",
-    );
+    const rows = await prisma.services.findMany({
+      where: { status: { in: ["planned", "in_progress"] } },
+      orderBy: ORDER_BY_ID,
+    });
+    return rows.map(toService);
   }
 }
 

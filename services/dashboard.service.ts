@@ -1,3 +1,4 @@
+import { INVOICE_STATUSES, LEAD_STATUSES } from "@/lib/schemas/enums";
 import type { DashboardSummary } from "@/types/dashboard";
 import type { InvoiceStatus } from "@/types/invoice";
 import type { LeadStatus } from "@/types/lead";
@@ -40,30 +41,15 @@ class DashboardService {
       activityService.getRecent(20),
     ]);
 
-    const leadStatuses: LeadStatus[] = [
-      "new",
-      "contacted",
-      "qualified",
-      "appointment_scheduled",
-      "converted",
-      "lost",
-    ];
     const byStatus = Object.fromEntries(
-      leadStatuses.map((status) => [
+      LEAD_STATUSES.map((status) => [
         status,
         leads.filter((lead) => lead.status === status).length,
       ]),
     ) as Record<LeadStatus, number>;
 
-    const invoiceStatuses: InvoiceStatus[] = [
-      "draft",
-      "sent",
-      "paid",
-      "overdue",
-      "cancelled",
-    ];
     const invoiceByStatus = Object.fromEntries(
-      invoiceStatuses.map((status) => [
+      INVOICE_STATUSES.map((status) => [
         status,
         invoices.filter((invoice) => invoice.status === status).length,
       ]),

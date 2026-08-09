@@ -1,116 +1,130 @@
-import { notes } from "@/data/notes";
+import { prisma } from "@/lib/prisma";
+import { Prisma } from "@/lib/generated/prisma/client";
+import type { notes as NoteRow } from "@/lib/generated/prisma/client";
 import type { EntityType, ID } from "@/types/common";
 import type { Note } from "@/types/note";
+import {
+  CreateNoteSchema,
+  UpdateNoteSchema,
+  type CreateNoteInput,
+  type UpdateNoteInput,
+} from "@/lib/schemas/note.schema";
 import { nextId, now } from "./helpers";
 import {
   assertEntityReference,
-  assertEnum,
-  assertRequiredString,
   assertUserId,
+  parseInput,
 } from "./validation";
 
-export type CreateNoteInput = Omit<Note, "id" | "createdAt" | "updatedAt">;
-export type UpdateNoteInput = Partial<CreateNoteInput>;
+export type { CreateNoteInput, UpdateNoteInput };
 
-const ENTITY_TYPES: EntityType[] = [
-  "lead",
-  "customer",
-  "appointment",
-  "task",
-  "service",
-  "invoice",
-  "note",
-];
+/** Stable order: zero-padded ids sort identically to the original /data array. */
+const ORDER_BY_ID = { id: "asc" } as const;
 
-function validateCreateInput(data: CreateNoteInput): CreateNoteInput {
-  const entityType = assertEnum(data.entityType, ENTITY_TYPES, "entityType");
-  const entityId = assertRequiredString(data.entityId, "entityId");
-  assertEntityReference(entityType, entityId);
-
+/** Map a Prisma `notes` row (snake_case, nullable) to the domain `Note`. */
+function toNote(row: NoteRow): Note {
   return {
-    entityType,
-    entityId,
-    content: assertRequiredString(data.content, "content"),
-    createdBy: assertUserId(data.createdBy, "createdBy"),
+    id: row.id,
+    entityType: row.entity_type as EntityType,
+    entityId: row.entity_id,
+    content: row.content,
+    createdBy: row.created_by,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
   };
 }
 
-function validateUpdateInput(data: UpdateNoteInput): UpdateNoteInput {
-  const validated: UpdateNoteInput = {};
+/** Translate a validated partial update into a Prisma column patch. */
+function toUpdatePatch(validated: UpdateNoteInput): Prisma.notesUncheckedUpdateInput {
+  const patch: Prisma.notesUncheckedUpdateInput = { updated_at: now() };
 
-  if ("entityType" in data && data.entityType !== undefined) {
-    validated.entityType = assertEnum(data.entityType, ENTITY_TYPES, "entityType");
-  }
-  if ("entityId" in data && data.entityId !== undefined) {
-    validated.entityId = assertRequiredString(data.entityId, "entityId");
-  }
-  if (validated.entityType && validated.entityId) {
-    assertEntityReference(validated.entityType, validated.entityId);
-  }
-  if ("content" in data && data.content !== undefined) {
-    validated.content = assertRequiredString(data.content, "content");
-  }
-  if ("createdBy" in data && data.createdBy !== undefined) {
-    validated.createdBy = assertUserId(data.createdBy, "createdBy");
-  }
+  if ("entityType" in validated) patch.entity_type = validated.entityType;
+  if ("entityId" in validated) patch.entity_id = validated.entityId;
+  if ("content" in validated) patch.content = validated.content;
+  if ("createdBy" in validated) patch.created_by = validated.createdBy;
 
-  return validated;
+  return patch;
 }
 
 class NoteService {
   async getAll(): Promise<Note[]> {
-    return [...notes];
+    const rows = await prisma.notes.findMany({ orderBy: ORDER_BY_ID });
+    return rows.map(toNote);
   }
 
   async getById(id: ID): Promise<Note | null> {
-    return notes.find((note) => note.id === id) ?? null;
+    const row = await prisma.notes.findUnique({ where: { id } });
+    return row ? toNote(row) : null;
   }
 
   async create(data: CreateNoteInput): Promise<Note> {
-    const validated = validateCreateInput(data);
+    const input = parseInput(CreateNoteSchema, data);
+    await assertEntityReference(input.entityType, input.entityId);
+    const createdBy = await assertUserId(input.createdBy, "createdBy");
     const timestamp = now();
-    const note: Note = {
-      ...validated,
-      id: nextId("note", notes),
-      createdAt: timestamp,
-      updatedAt: timestamp,
-    };
-    notes.push(note);
-    return note;
+
+    const existing = await prisma.notes.findMany({ select: { id: true } });
+    const id = nextId("note", existing);
+
+    const row = await prisma.notes.create({
+      data: {
+        id,
+        entity_type: input.entityType,
+        entity_id: input.entityId,
+        content: input.content,
+        created_by: createdBy,
+        created_at: timestamp,
+        updated_at: timestamp,
+      },
+    });
+
+    return toNote(row);
   }
 
   async update(id: ID, data: UpdateNoteInput): Promise<Note | null> {
-    const index = notes.findIndex((note) => note.id === id);
-    if (index === -1) return null;
+    const previous = await this.getById(id);
+    if (!previous) return null;
 
-    const validated = validateUpdateInput(data);
-    const updated: Note = {
-      ...notes[index],
-      ...validated,
-      id,
-      updatedAt: now(),
-    };
-    notes[index] = updated;
-    return updated;
+    const validated = parseInput(UpdateNoteSchema, data);
+    if (validated.entityType !== undefined && validated.entityId !== undefined) {
+      await assertEntityReference(validated.entityType, validated.entityId);
+    }
+    if (validated.createdBy !== undefined) {
+      validated.createdBy = await assertUserId(validated.createdBy, "createdBy");
+    }
+    const row = await prisma.notes.update({
+      where: { id },
+      data: toUpdatePatch(validated),
+    });
+
+    return toNote(row);
   }
 
   async delete(id: ID): Promise<boolean> {
-    const index = notes.findIndex((note) => note.id === id);
-    if (index === -1) return false;
-    notes.splice(index, 1);
+    const existing = await prisma.notes.findUnique({
+      where: { id },
+      select: { id: true },
+    });
+    if (!existing) return false;
+
+    await prisma.notes.delete({ where: { id } });
     return true;
   }
 
   async getForEntity(entityType: EntityType, entityId: ID): Promise<Note[]> {
-    return notes
-      .filter(
-        (note) => note.entityType === entityType && note.entityId === entityId,
-      )
-      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+    const rows = await prisma.notes.findMany({
+      where: { entity_type: entityType, entity_id: entityId },
+      orderBy: { created_at: "desc" },
+    });
+    return rows.map(toNote);
   }
 
   async getByAuthor(userId: ID): Promise<Note[]> {
-    return notes.filter((note) => note.createdBy === userId);
+    const rows = await prisma.notes.findMany({
+      where: { created_by: userId },
+      orderBy: ORDER_BY_ID,
+    });
+    return rows.map(toNote);
   }
 }
 

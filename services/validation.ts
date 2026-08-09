@@ -1,202 +1,192 @@
-import { customers } from "@/data/customers";
-import { leads } from "@/data/leads";
-import { services } from "@/data/services";
-import { users } from "@/data/users";
+import type { ZodType } from "zod";
+import { prisma } from "@/lib/prisma";
 import type { EntityType, ID } from "@/types/common";
 import { ServiceError } from "./errors";
 
-export function toDate(value: unknown, field: string): Date {
-  if (value instanceof Date) {
-    if (Number.isNaN(value.getTime())) {
-      throw new ServiceError(`Invalid date for ${field}`, "VALIDATION");
-    }
-    return value;
-  }
+/**
+ * Pure input validation (required/optional strings, enums, dates, numbers,
+ * tags, create/update shapes) now lives in `lib/schemas/*` as Zod schemas.
+ * `parseInput` bridges a Zod validation failure to the existing `ServiceError`
+ * contract so the API keeps returning `VALIDATION` (HTTP 400).
+ *
+ * Everything else in this file is DB-backed / business validation that must
+ * query PostgreSQL, so it stays in the service layer.
+ */
 
-  if (typeof value === "string" || typeof value === "number") {
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) {
-      throw new ServiceError(`Invalid date for ${field}`, "VALIDATION");
-    }
-    return date;
+/** Parse raw input against a Zod schema, throwing `ServiceError("VALIDATION")`. */
+export function parseInput<T>(schema: ZodType<T>, data: unknown): T {
+  const result = schema.safeParse(data);
+  if (!result.success) {
+    const issue = result.error.issues[0];
+    const path = issue?.path.join(".");
+    const message = issue
+      ? path
+        ? `${path}: ${issue.message}`
+        : issue.message
+      : "Invalid input";
+    throw new ServiceError(message, "VALIDATION");
   }
-
-  throw new ServiceError(`${field} is required`, "VALIDATION");
+  return result.data;
 }
 
-export function toOptionalDate(
-  value: unknown,
-  field: string,
-): Date | undefined {
-  if (value === undefined || value === null) return undefined;
-  return toDate(value, field);
-}
-
-export function assertRequiredString(
-  value: unknown,
-  field: string,
-): string {
+/** Trim + require a string id before hitting the database. */
+function requiredId(value: unknown, field: string): ID {
   if (typeof value !== "string" || !value.trim()) {
     throw new ServiceError(`${field} is required`, "VALIDATION");
   }
   return value.trim();
 }
 
-export function assertOptionalString(
-  value: unknown,
-  field: string,
-): string | undefined {
-  if (value === undefined || value === null) return undefined;
-  if (typeof value !== "string") {
-    throw new ServiceError(`${field} must be a string`, "VALIDATION");
-  }
-  const trimmed = value.trim();
-  return trimmed || undefined;
-}
+// Existence checks below query PostgreSQL through the shared Prisma client, so
+// they stay correct for records created directly in the database (not just the
+// original /data seed). They are async; callers must await them.
 
-export function assertEnum<T extends string>(
+export async function assertUserId(
   value: unknown,
-  allowed: readonly T[],
-  field: string,
-): T {
-  if (typeof value !== "string" || !allowed.includes(value as T)) {
-    throw new ServiceError(
-      `Invalid ${field}: expected one of ${allowed.join(", ")}`,
-      "VALIDATION",
-    );
-  }
-  return value as T;
-}
-
-export function assertOptionalEnum<T extends string>(
-  value: unknown,
-  allowed: readonly T[],
-  field: string,
-): T | undefined {
-  if (value === undefined || value === null) return undefined;
-  return assertEnum(value, allowed, field);
-}
-
-export function assertUserId(value: unknown, field = "assignedTo"): ID {
-  const id = assertRequiredString(value, field);
-  if (!users.some((user) => user.id === id)) {
+  field = "assignedTo",
+): Promise<ID> {
+  const id = requiredId(value, field);
+  const exists = await prisma.users.findUnique({
+    where: { id },
+    select: { id: true },
+  });
+  if (!exists) {
     throw new ServiceError(`Unknown user: ${id}`, "VALIDATION");
   }
   return id;
 }
 
-export function assertOptionalUserId(
+export async function assertOptionalUserId(
   value: unknown,
   field: string,
-): ID | undefined {
+): Promise<ID | undefined> {
   if (value === undefined || value === null) return undefined;
   return assertUserId(value, field);
 }
 
-export function assertLeadId(value: unknown, field = "leadId"): ID {
-  const id = assertRequiredString(value, field);
-  if (!leads.some((lead) => lead.id === id)) {
+export async function assertLeadId(
+  value: unknown,
+  field = "leadId",
+): Promise<ID> {
+  const id = requiredId(value, field);
+  const exists = await prisma.leads.findUnique({
+    where: { id },
+    select: { id: true },
+  });
+  if (!exists) {
     throw new ServiceError(`Unknown lead: ${id}`, "VALIDATION");
   }
   return id;
 }
 
-export function assertOptionalLeadId(
+export async function assertOptionalLeadId(
   value: unknown,
   field = "leadId",
-): ID | undefined {
+): Promise<ID | undefined> {
   if (value === undefined || value === null) return undefined;
   if (value === "") return undefined;
   return assertLeadId(value, field);
 }
 
-export function assertCustomerId(value: unknown, field = "customerId"): ID {
-  const id = assertRequiredString(value, field);
-  if (!customers.some((customer) => customer.id === id)) {
+export async function assertCustomerId(
+  value: unknown,
+  field = "customerId",
+): Promise<ID> {
+  const id = requiredId(value, field);
+  const exists = await prisma.customers.findUnique({
+    where: { id },
+    select: { id: true },
+  });
+  if (!exists) {
     throw new ServiceError(`Unknown customer: ${id}`, "VALIDATION");
   }
   return id;
 }
 
-export function assertOptionalCustomerId(
+export async function assertOptionalCustomerId(
   value: unknown,
   field = "customerId",
-): ID | undefined {
+): Promise<ID | undefined> {
   if (value === undefined || value === null) return undefined;
   if (value === "") return undefined;
   return assertCustomerId(value, field);
 }
 
-export function assertServiceId(value: unknown, field = "serviceId"): ID {
-  const id = assertRequiredString(value, field);
-  if (!services.some((service) => service.id === id)) {
+export async function assertServiceId(
+  value: unknown,
+  field = "serviceId",
+): Promise<ID> {
+  const id = requiredId(value, field);
+  const exists = await prisma.services.findUnique({
+    where: { id },
+    select: { id: true },
+  });
+  if (!exists) {
     throw new ServiceError(`Unknown service: ${id}`, "VALIDATION");
   }
   return id;
 }
 
-export function assertOptionalServiceId(
+export async function assertOptionalServiceId(
   value: unknown,
   field = "serviceId",
-): ID | undefined {
+): Promise<ID | undefined> {
   if (value === undefined || value === null) return undefined;
   if (value === "") return undefined;
   return assertServiceId(value, field);
 }
 
-export function assertEntityReference(
+export async function assertEntityReference(
   entityType: EntityType,
   entityId: ID,
-): void {
-  const exists = (() => {
-    switch (entityType) {
-      case "lead":
-        return leads.some((lead) => lead.id === entityId);
-      case "customer":
-        return customers.some((customer) => customer.id === entityId);
-      case "appointment":
-      case "task":
-      case "service":
-      case "invoice":
-      case "note":
-        return true;
-      default:
-        return false;
-    }
-  })();
+): Promise<void> {
+  // Only lead/customer are real FK-backed entities we verify. The remaining
+  // polymorphic targets (appointment, task, service, invoice, note) are not
+  // existence-checked here — same as the original in-memory behavior.
+  let exists: boolean;
+  switch (entityType) {
+    case "lead":
+      exists = Boolean(
+        await prisma.leads.findUnique({
+          where: { id: entityId },
+          select: { id: true },
+        }),
+      );
+      break;
+    case "customer":
+      exists = Boolean(
+        await prisma.customers.findUnique({
+          where: { id: entityId },
+          select: { id: true },
+        }),
+      );
+      break;
+    case "appointment":
+    case "task":
+    case "service":
+    case "invoice":
+    case "note":
+      exists = true;
+      break;
+    default:
+      exists = false;
+  }
 
   if (!exists) {
-    throw new ServiceError(
-      `Unknown ${entityType}: ${entityId}`,
-      "VALIDATION",
-    );
+    throw new ServiceError(`Unknown ${entityType}: ${entityId}`, "VALIDATION");
   }
 }
 
-export function assertTags(value: unknown): string[] {
-  if (!Array.isArray(value)) {
-    throw new ServiceError("tags must be an array", "VALIDATION");
-  }
-  return value.map((tag, index) =>
-    assertRequiredString(tag, `tags[${index}]`),
-  );
-}
-
-export function assertPositiveNumber(
-  value: unknown,
-  field: string,
-): number {
-  if (typeof value !== "number" || !Number.isFinite(value) || value < 0) {
-    throw new ServiceError(`${field} must be a non-negative number`, "VALIDATION");
-  }
-  return value;
-}
-
-/** Exactly one of leadId or customerId must be set. */
-export function assertLeadCustomerXor(
+/**
+ * Exactly one of leadId or customerId must be set (shape), and the supplied id
+ * must exist in PostgreSQL (existence). The exactly-one shape rule is kept here
+ * with the existence check because they are validated together and, on update,
+ * against the existing record via `resolveLeadCustomerLink`.
+ */
+export async function assertLeadCustomerXor(
   leadId: ID | undefined,
   customerId: ID | undefined,
-): { leadId?: ID; customerId?: ID } {
+): Promise<{ leadId?: ID; customerId?: ID }> {
   const hasLead = Boolean(leadId);
   const hasCustomer = Boolean(customerId);
 
@@ -214,18 +204,17 @@ export function assertLeadCustomerXor(
     );
   }
 
-  if (leadId) assertLeadId(leadId);
-  if (customerId) assertCustomerId(customerId);
+  if (leadId) await assertLeadId(leadId);
+  if (customerId) await assertCustomerId(customerId);
 
   return { leadId, customerId };
 }
 
-export function resolveLeadCustomerLink(
+export async function resolveLeadCustomerLink(
   input: { leadId?: ID; customerId?: ID },
   existing?: { leadId?: ID; customerId?: ID },
-): { leadId?: ID; customerId?: ID } {
-  const leadId =
-    "leadId" in input ? input.leadId : existing?.leadId;
+): Promise<{ leadId?: ID; customerId?: ID }> {
+  const leadId = "leadId" in input ? input.leadId : existing?.leadId;
   const customerId =
     "customerId" in input ? input.customerId : existing?.customerId;
 

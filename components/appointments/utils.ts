@@ -2,13 +2,8 @@ import type { AppointmentDto, AppointmentStatus } from "@/types/appointment";
 import type { CustomerDto } from "@/types/customer";
 import type { LeadDto } from "@/types/lead";
 
-export const APPOINTMENT_STATUSES: AppointmentStatus[] = [
-  "scheduled",
-  "confirmed",
-  "completed",
-  "cancelled",
-  "no_show",
-];
+// Single source of truth for domain vocabularies: lib/schemas/enums.ts.
+export { APPOINTMENT_STATUSES } from "@/lib/schemas/enums";
 
 export type ViewMode = "upcoming" | "month";
 

@@ -1,14 +1,14 @@
 # Pulse CRM — Project Status
 
-Last reviewed: **4 Aug 2026** — against types, services, API, hooks, and UI.
+Last reviewed: **9 Aug 2026** — against types, services, API, hooks, and UI.
 
 ---
 
 ## Current phase
 
-**Foundation + early product UI.**
+**Foundation + early product UI — now on a real database.**
 
-Domain models, deterministic seed data, service layer, and REST APIs are in place for the core CRM entities. Frontend work covers **Dashboard**, **Leads** (list + detail), **Customers** (list + detail), **Appointments**, **Tasks**, and **Reports**. App shell navigation (`AppShell`) is wired through `(dashboard)/layout.tsx`. **Settings** remains a placeholder page only.
+Domain models, deterministic seed data, service layer, and REST APIs are in place for the core CRM entities. **The service layer has been migrated to PostgreSQL via Prisma** (ADR-021): all 9 domain services now read/write the database, `/data` is only the seed source, and API routes were left unchanged. Frontend work covers **Dashboard**, **Leads** (list + detail), **Customers** (list + detail), **Appointments**, **Tasks**, and **Reports**. App shell navigation (`AppShell`) is wired through `(dashboard)/layout.tsx`. **Settings** remains a placeholder page only.
 
 ---
 
@@ -17,14 +17,14 @@ Domain models, deterministic seed data, service layer, and REST APIs are in plac
 | Layer | Status | Notes |
 | --- | --- | --- |
 | `types/` | Complete for current domains | Entities + wire DTOs (`WithIsoDates`, feature DTOs) |
-| `data/` | Complete seed sets | Deterministic; relationally linked |
-| `services/` | Complete CRUD + domain queries | Only layer that imports `/data` |
-| `app/api/` | Complete thin REST for entities | Plus dashboard, lead/customer details, convert |
+| `data/` | Complete seed sets | Deterministic; now the DB seed source only (loaded by `npm run db:seed`) |
+| `services/` | Complete CRUD + domain queries | PostgreSQL/Prisma-backed (ADR-021); imports `@/lib/prisma`, zero `/data` imports |
+| `app/api/` | Complete thin REST for entities | Plus dashboard, lead/customer details, convert; unchanged by the DB migration |
 | `lib/api.ts` + hooks | Complete for used screens | Lightweight `fetch` wrapper; no React Query/SWR |
 | UI modules | Partial | Dashboard, Leads, Customers, Appointments, Tasks, Reports |
 | Auth | Not built | — |
 | Layout chrome | Complete | `AppShell` — fixed-height sidebar, scrollable nav, mobile drawer |
-| Real database | Not started | In-memory seed arrays stand in for DB |
+| Real database | **Complete** | All 9 services on PostgreSQL via Prisma (ADR-021); Docker Postgres 17 on host port 5433 (ADR-020) |
 
 ---
 
@@ -97,7 +97,7 @@ No `/api/users` route. Assignee **names** resolve in service `getDetails` respon
 ## Current frontend architecture
 
 ```
-Page (client) → hooks → lib/api (fetch) → /api/* → services → data
+Page (client) → hooks → lib/api (fetch) → /api/* → services → Prisma Client → PostgreSQL
 ```
 
 - **Pages** hold UI-only state and compose feature components.
@@ -124,14 +124,28 @@ Root `/` is still the default create-next-app page.
 - **Tasks** — list vertical slice: `GET /api/tasks` → `useTasks`; summary counts and view modes (open / overdue / due today / completed); status and priority filters; related lead/customer labels from parallel list hooks. Create/update still available via API (used from lead detail); no dedicated task form on the list page.
 - **Dashboard** — aggregated read model: counts, pipeline, upcoming appointments slice, recent activities.
 - **Reports** — aggregated analytics read model: `reportService.getSummary()` composes lead, appointment, task, and invoice services; no report entity or seed file.
-- **Backend** — CRUD and query helpers for activities, notes, catalog services, invoices (API-testable).
-- **Layering** — `AGENTS.md` rules followed: UI/hooks do not import `services` or `data`.
+- **Backend** — CRUD and query helpers for activities, notes, catalog services, invoices (API-testable), all backed by PostgreSQL/Prisma.
+- **Layering** — `AGENTS.md` rules followed: UI/hooks do not import `services` or `data`; services now talk to Prisma, and the DB swap stayed below the API boundary (ADR-021).
+
+---
+
+## PostgreSQL database (now the live datastore)
+
+The app runs on a Docker Postgres 17 container; all services query it via Prisma:
+
+- Container `pulse-crm-postgres` (image `postgres:17`), database `pulse_crm`, user `pulse`, named volume `pulse-crm-db-data`.
+- Published on host port **5433** (container port stays 5432) because the Windows host already runs native PostgreSQL 18 as service `postgresql-x64-18` on port 5432. See ADR-020 for why port 5433 was chosen.
+- `.env` `DATABASE_URL` points Prisma at `localhost:5433`. Prisma 7 requires a driver adapter — `lib/prisma.ts` wires `@prisma/adapter-pg`.
+- Schema: `prisma/schema.prisma` (DDL in `db/migrations/`). Seed: `npm run db:seed` (`scripts/seed.ts`) loads `/data` idempotently in FK-safe order.
+
+**Milestone — service-layer DB migration complete (ADR-021):** all 9 domain services (`users`-referencing leads, customers, appointments, tasks, services, invoices, activities, notes) now read/write PostgreSQL; `validation.ts` existence checks are async and DB-backed; `/data` is only the seed source (zero `/data` imports in `services/`). API routes were intentionally left unchanged — the service layer abstracts storage. TypeScript check passes and the integration suite (`scripts/integration-test.ts`) reports **53/53 passing**, with all test rows cleaned up and the DB restored to baseline seed counts.
 
 ---
 
 ## Known gaps / limitations
 
-- No auth, no real database, no users API.
+- No auth, no users API.
+- `leadService.search` / `customerService.search` filter in application memory; `invoices.invoice_number` duplicates surface as raw Prisma errors (see ADR-021 tradeoffs). Multi-step delete/convert are not yet wrapped in a DB transaction.
 - Appointments: no detail route; assignee column shows user ID; no calendar library (day-grouped list only).
 - Tasks: no detail route; assignee column shows user ID.
 - Orphan `.gitkeep` files remain in some folders that already have real components/pages.
@@ -146,7 +160,7 @@ Suggested order:
 1. **Clean empty stubs** or implement deliberately (`lib/*`, `utils/*`, `data/dashboard.ts`); remove stale `.gitkeep` files.
 2. **Home redirect** — point `/` at `/dashboard` (or a real landing).
 3. **Settings UI** — placeholder page only.
-4. Later: users API or composite list endpoints if client-side joins become painful; auth; real DB behind services.
+4. Later: users API or composite list endpoints if client-side joins become painful; auth. **Real DB behind services is done (ADR-021)** — remaining DB follow-ups: SQL-side search, transactional delete/convert, and mapping `invoice_number` duplicates to `ServiceError.CONFLICT`.
 
 ---
 
@@ -156,4 +170,4 @@ Suggested order:
 | --- | --- |
 | **Completed** | Implemented and wired end-to-end (or backend-complete as noted) |
 | **In progress** | Partial UI; hooks/API ahead of screens |
-| **Planned** | Placeholder pages / stubs / not started (settings UI, auth, DB, full calendar widget) |
+| **Planned** | Placeholder pages / stubs / not started (settings UI, auth, full calendar widget) |

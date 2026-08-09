@@ -4,26 +4,15 @@ import {
   type PaginatedResult,
   type WithIsoDates,
 } from "./common";
+import type {
+  LeadPriority,
+  LeadSource,
+  LeadStatus,
+} from "@/lib/schemas/enums";
 
-export type LeadStatus =
-  | "new"
-  | "contacted"
-  | "qualified"
-  | "appointment_scheduled"
-  | "converted"
-  | "lost";
-
-export type LeadSource =
-  | "website"
-  | "whatsapp"
-  | "facebook"
-  | "instagram"
-  | "google"
-  | "referral"
-  | "walk_in"
-  | "phone";
-
-export type LeadPriority = "low" | "medium" | "high";
+// Domain vocabularies are defined once in lib/schemas/enums.ts (the runtime
+// source of truth) and re-exported here so consumers keep importing from types/.
+export type { LeadPriority, LeadSource, LeadStatus };
 
 export interface Lead extends BaseEntity {
   // Person

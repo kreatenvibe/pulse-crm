@@ -1,8 +1,10 @@
 // types/user.ts
 
 import { BaseEntity } from "./common";
+import type { UserRole } from "@/lib/schemas/enums";
 
-export type UserRole = "admin" | "manager" | "sales";
+// Source of truth: lib/schemas/enums.ts.
+export type { UserRole };
 
 export interface User extends BaseEntity {
   name: string;

@@ -1,202 +1,214 @@
-import { appointments } from "@/data/appointments";
+import { prisma } from "@/lib/prisma";
+import { Prisma } from "@/lib/generated/prisma/client";
+import type { appointments as AppointmentRow } from "@/lib/generated/prisma/client";
 import type { ID } from "@/types/common";
 import type { Appointment, AppointmentStatus } from "@/types/appointment";
+import {
+  CreateAppointmentSchema,
+  UpdateAppointmentSchema,
+  type CreateAppointmentInput,
+  type UpdateAppointmentInput,
+} from "@/lib/schemas/appointment.schema";
 import { ServiceError } from "./errors";
 import { nextId, now } from "./helpers";
 import {
-  assertEnum,
-  assertOptionalString,
-  assertRequiredString,
   assertUserId,
+  parseInput,
   resolveLeadCustomerLink,
-  toDate,
 } from "./validation";
 
-export type CreateAppointmentInput = Omit<
-  Appointment,
-  "id" | "createdAt" | "updatedAt"
->;
-export type UpdateAppointmentInput = Partial<CreateAppointmentInput>;
+export type { CreateAppointmentInput, UpdateAppointmentInput };
 
-const APPOINTMENT_STATUSES: AppointmentStatus[] = [
-  "scheduled",
-  "confirmed",
-  "completed",
-  "cancelled",
-  "no_show",
-];
+/** Stable order: zero-padded ids sort identically to the original /data array. */
+const ORDER_BY_ID = { id: "asc" } as const;
 
-function validateCreateInput(
-  data: CreateAppointmentInput,
-): CreateAppointmentInput {
-  const link = resolveLeadCustomerLink(data);
-  const start = toDate(data.start, "start");
-  const end = toDate(data.end, "end");
-
-  if (end < start) {
-    throw new ServiceError("end must be on or after start", "VALIDATION");
-  }
-
+/** Map a Prisma `appointments` row (snake_case, nullable) to the domain `Appointment`. */
+function toAppointment(row: AppointmentRow): Appointment {
   return {
-    ...link,
-    title: assertRequiredString(data.title, "title"),
-    start,
-    end,
-    status: assertEnum(data.status, APPOINTMENT_STATUSES, "status"),
-    assignedTo: assertUserId(data.assignedTo),
-    notes: assertOptionalString(data.notes, "notes"),
+    id: row.id,
+    leadId: row.lead_id ?? undefined,
+    customerId: row.customer_id ?? undefined,
+    title: row.title,
+    start: row.starts_at,
+    end: row.ends_at,
+    status: row.status as AppointmentStatus,
+    assignedTo: row.assigned_to,
+    notes: row.notes ?? undefined,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
   };
 }
 
-function validateUpdateInput(
-  data: UpdateAppointmentInput,
-  existing: Appointment,
-): UpdateAppointmentInput {
-  const validated: UpdateAppointmentInput = {};
+/** Translate a validated partial update into a Prisma column patch. */
+function toUpdatePatch(
+  validated: UpdateAppointmentInput,
+): Prisma.appointmentsUncheckedUpdateInput {
+  const patch: Prisma.appointmentsUncheckedUpdateInput = { updated_at: now() };
 
-  if ("title" in data && data.title !== undefined) {
-    validated.title = assertRequiredString(data.title, "title");
-  }
-  if ("notes" in data) {
-    validated.notes = assertOptionalString(data.notes, "notes");
-  }
-  if ("assignedTo" in data && data.assignedTo !== undefined) {
-    validated.assignedTo = assertUserId(data.assignedTo);
-  }
-  if (
-    "leadId" in data ||
-    "customerId" in data ||
-    data.leadId !== undefined ||
-    data.customerId !== undefined
-  ) {
-    validated.leadId = data.leadId;
-    validated.customerId = data.customerId;
-    const link = resolveLeadCustomerLink(validated, existing);
-    validated.leadId = link.leadId;
-    validated.customerId = link.customerId;
-  }
-  if ("start" in data && data.start !== undefined) {
-    validated.start = toDate(data.start, "start");
-  }
-  if ("end" in data && data.end !== undefined) {
-    validated.end = toDate(data.end, "end");
-  }
-  if ("status" in data && data.status !== undefined) {
-    validated.status = assertEnum(
-      data.status,
-      APPOINTMENT_STATUSES,
-      "status",
-    );
+  if ("title" in validated) patch.title = validated.title;
+  if ("notes" in validated) patch.notes = validated.notes ?? null;
+  if ("assignedTo" in validated) patch.assigned_to = validated.assignedTo;
+  if ("start" in validated) patch.starts_at = validated.start;
+  if ("end" in validated) patch.ends_at = validated.end;
+  if ("status" in validated) patch.status = validated.status;
+  if ("leadId" in validated || "customerId" in validated) {
+    patch.lead_id = validated.leadId ?? null;
+    patch.customer_id = validated.customerId ?? null;
   }
 
-  const start = validated.start ?? existing.start;
-  const end = validated.end ?? existing.end;
-  if (end < start) {
-    throw new ServiceError("end must be on or after start", "VALIDATION");
-  }
-
-  return validated;
+  return patch;
 }
 
 class AppointmentService {
   async getAll(): Promise<Appointment[]> {
-    return [...appointments];
+    const rows = await prisma.appointments.findMany({ orderBy: ORDER_BY_ID });
+    return rows.map(toAppointment);
   }
 
   async getById(id: ID): Promise<Appointment | null> {
-    return appointments.find((appointment) => appointment.id === id) ?? null;
+    const row = await prisma.appointments.findUnique({ where: { id } });
+    return row ? toAppointment(row) : null;
   }
 
   async create(data: CreateAppointmentInput): Promise<Appointment> {
-    const validated = validateCreateInput(data);
+    // Schema validates fields + the pure end >= start rule (both dates present).
+    const input = parseInput(CreateAppointmentSchema, data);
+    // Exactly-one-of + existence for leadId/customerId (DB-backed).
+    const link = await resolveLeadCustomerLink(input);
+    const assignedTo = await assertUserId(input.assignedTo);
     const timestamp = now();
-    const appointment: Appointment = {
-      ...validated,
-      id: nextId("appt", appointments),
-      createdAt: timestamp,
-      updatedAt: timestamp,
-    };
-    appointments.push(appointment);
-    return appointment;
+
+    const existing = await prisma.appointments.findMany({
+      select: { id: true },
+    });
+    const id = nextId("appt", existing);
+
+    const row = await prisma.appointments.create({
+      data: {
+        id,
+        lead_id: link.leadId ?? null,
+        customer_id: link.customerId ?? null,
+        title: input.title,
+        starts_at: input.start,
+        ends_at: input.end,
+        status: input.status,
+        assigned_to: assignedTo,
+        notes: input.notes ?? null,
+        created_at: timestamp,
+        updated_at: timestamp,
+      },
+    });
+
+    return toAppointment(row);
   }
 
   async update(
     id: ID,
     data: UpdateAppointmentInput,
   ): Promise<Appointment | null> {
-    const index = appointments.findIndex((appointment) => appointment.id === id);
-    if (index === -1) return null;
+    const existing = await this.getById(id);
+    if (!existing) return null;
 
-    const validated = validateUpdateInput(data, appointments[index]);
-    const updated: Appointment = {
-      ...appointments[index],
-      ...validated,
-      id,
-      updatedAt: now(),
-    };
-    appointments[index] = updated;
-    return updated;
+    const validated = parseInput(UpdateAppointmentSchema, data);
+    if (validated.assignedTo !== undefined) {
+      validated.assignedTo = await assertUserId(validated.assignedTo);
+    }
+    if (
+      "leadId" in validated ||
+      "customerId" in validated ||
+      validated.leadId !== undefined ||
+      validated.customerId !== undefined
+    ) {
+      const link = await resolveLeadCustomerLink(
+        { leadId: validated.leadId, customerId: validated.customerId },
+        existing,
+      );
+      validated.leadId = link.leadId;
+      validated.customerId = link.customerId;
+    }
+    // end >= start may involve the existing record, so it stays here.
+    const start = validated.start ?? existing.start;
+    const end = validated.end ?? existing.end;
+    if (end < start) {
+      throw new ServiceError("end must be on or after start", "VALIDATION");
+    }
+    const row = await prisma.appointments.update({
+      where: { id },
+      data: toUpdatePatch(validated),
+    });
+    return toAppointment(row);
   }
 
   async delete(id: ID): Promise<boolean> {
-    const index = appointments.findIndex((appointment) => appointment.id === id);
-    if (index === -1) return false;
-    appointments.splice(index, 1);
+    const existing = await prisma.appointments.findUnique({
+      where: { id },
+      select: { id: true },
+    });
+    if (!existing) return false;
+
+    await prisma.appointments.delete({ where: { id } });
     return true;
   }
 
   async getByStatus(status: AppointmentStatus): Promise<Appointment[]> {
-    return appointments.filter((appointment) => appointment.status === status);
+    const rows = await prisma.appointments.findMany({
+      where: { status },
+      orderBy: ORDER_BY_ID,
+    });
+    return rows.map(toAppointment);
   }
 
   async getByLeadId(leadId: ID): Promise<Appointment[]> {
-    return appointments.filter((appointment) => appointment.leadId === leadId);
+    const rows = await prisma.appointments.findMany({
+      where: { lead_id: leadId },
+      orderBy: ORDER_BY_ID,
+    });
+    return rows.map(toAppointment);
   }
 
   async getByCustomerId(customerId: ID): Promise<Appointment[]> {
-    return appointments.filter(
-      (appointment) => appointment.customerId === customerId,
-    );
+    const rows = await prisma.appointments.findMany({
+      where: { customer_id: customerId },
+      orderBy: ORDER_BY_ID,
+    });
+    return rows.map(toAppointment);
   }
 
   async getByAssignee(userId: ID): Promise<Appointment[]> {
-    return appointments.filter(
-      (appointment) => appointment.assignedTo === userId,
-    );
+    const rows = await prisma.appointments.findMany({
+      where: { assigned_to: userId },
+      orderBy: ORDER_BY_ID,
+    });
+    return rows.map(toAppointment);
   }
 
   /** Reassign lead appointments to a customer after conversion. */
   async migrateLeadToCustomer(leadId: ID, customerId: ID): Promise<number> {
-    let count = 0;
-    for (const appointment of appointments) {
-      if (appointment.leadId === leadId) {
-        appointment.leadId = undefined;
-        appointment.customerId = customerId;
-        appointment.updatedAt = now();
-        count += 1;
-      }
-    }
-    return count;
+    const result = await prisma.appointments.updateMany({
+      where: { lead_id: leadId },
+      data: { lead_id: null, customer_id: customerId, updated_at: now() },
+    });
+    return result.count;
   }
 
   /** Future appointments that are still scheduled or confirmed. */
   async getUpcoming(from: Date = now()): Promise<Appointment[]> {
-    return appointments
-      .filter(
-        (appointment) =>
-          appointment.start >= from &&
-          (appointment.status === "scheduled" ||
-            appointment.status === "confirmed"),
-      )
-      .sort((a, b) => a.start.getTime() - b.start.getTime());
+    const rows = await prisma.appointments.findMany({
+      where: {
+        starts_at: { gte: from },
+        status: { in: ["scheduled", "confirmed"] },
+      },
+      orderBy: { starts_at: "asc" },
+    });
+    return rows.map(toAppointment);
   }
 
   async getInRange(from: Date, to: Date): Promise<Appointment[]> {
-    return appointments
-      .filter(
-        (appointment) => appointment.start >= from && appointment.start <= to,
-      )
-      .sort((a, b) => a.start.getTime() - b.start.getTime());
+    const rows = await prisma.appointments.findMany({
+      where: { starts_at: { gte: from, lte: to } },
+      orderBy: { starts_at: "asc" },
+    });
+    return rows.map(toAppointment);
   }
 }
 

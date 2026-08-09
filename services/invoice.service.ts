@@ -1,149 +1,179 @@
-import { invoices } from "@/data/invoices";
+import { prisma } from "@/lib/prisma";
+import { Prisma } from "@/lib/generated/prisma/client";
+import type { invoices as InvoiceRow } from "@/lib/generated/prisma/client";
 import type { ID } from "@/types/common";
 import type { Invoice, InvoiceStatus } from "@/types/invoice";
+import {
+  CreateInvoiceSchema,
+  UpdateInvoiceSchema,
+  type CreateInvoiceInput,
+  type UpdateInvoiceInput,
+} from "@/lib/schemas/invoice.schema";
 import { nextId, now } from "./helpers";
 import {
   assertCustomerId,
-  assertEnum,
   assertOptionalServiceId,
-  assertPositiveNumber,
-  assertRequiredString,
-  toDate,
+  parseInput,
 } from "./validation";
 
-export type CreateInvoiceInput = Omit<
-  Invoice,
-  "id" | "createdAt" | "updatedAt"
->;
-export type UpdateInvoiceInput = Partial<CreateInvoiceInput>;
+export type { CreateInvoiceInput, UpdateInvoiceInput };
 
-const INVOICE_STATUSES: InvoiceStatus[] = [
-  "draft",
-  "sent",
-  "paid",
-  "overdue",
-  "cancelled",
-];
+/** Stable order: zero-padded ids sort identically to the original /data array. */
+const ORDER_BY_ID = { id: "asc" } as const;
 
-function validateCreateInput(data: CreateInvoiceInput): CreateInvoiceInput {
+/** Map a Prisma `invoices` row (snake_case, nullable) to the domain `Invoice`. */
+function toInvoice(row: InvoiceRow): Invoice {
   return {
-    customerId: assertCustomerId(data.customerId),
-    serviceId: assertOptionalServiceId(data.serviceId),
-    amountCents: assertPositiveNumber(data.amountCents, "amountCents"),
-    currency: assertRequiredString(data.currency, "currency"),
-    invoiceNumber: assertRequiredString(data.invoiceNumber, "invoiceNumber"),
-    status: assertEnum(data.status, INVOICE_STATUSES, "status"),
-    issuedAt: toDate(data.issuedAt, "issuedAt"),
-    dueDate: toDate(data.dueDate, "dueDate"),
+    id: row.id,
+    customerId: row.customer_id,
+    serviceId: row.service_id ?? undefined,
+    // DB stores amount_cents as BigInt; the domain models it as a JS number.
+    amountCents: Number(row.amount_cents),
+    currency: row.currency,
+    invoiceNumber: row.invoice_number,
+    status: row.status as InvoiceStatus,
+    issuedAt: row.issued_at,
+    dueDate: row.due_date,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
   };
 }
 
-function validateUpdateInput(data: UpdateInvoiceInput): UpdateInvoiceInput {
-  const validated: UpdateInvoiceInput = {};
+/** Translate a validated partial update into a Prisma column patch. */
+function toUpdatePatch(
+  validated: UpdateInvoiceInput,
+): Prisma.invoicesUncheckedUpdateInput {
+  const patch: Prisma.invoicesUncheckedUpdateInput = { updated_at: now() };
 
-  if ("customerId" in data && data.customerId !== undefined) {
-    validated.customerId = assertCustomerId(data.customerId);
+  if ("customerId" in validated) patch.customer_id = validated.customerId;
+  if ("serviceId" in validated) patch.service_id = validated.serviceId ?? null;
+  if ("amountCents" in validated && validated.amountCents !== undefined) {
+    patch.amount_cents = BigInt(validated.amountCents);
   }
-  if ("serviceId" in data) {
-    validated.serviceId = assertOptionalServiceId(data.serviceId);
+  if ("currency" in validated) patch.currency = validated.currency;
+  if ("invoiceNumber" in validated) {
+    patch.invoice_number = validated.invoiceNumber;
   }
-  if ("amountCents" in data && data.amountCents !== undefined) {
-    validated.amountCents = assertPositiveNumber(
-      data.amountCents,
-      "amountCents",
-    );
-  }
-  if ("currency" in data && data.currency !== undefined) {
-    validated.currency = assertRequiredString(data.currency, "currency");
-  }
-  if ("invoiceNumber" in data && data.invoiceNumber !== undefined) {
-    validated.invoiceNumber = assertRequiredString(
-      data.invoiceNumber,
-      "invoiceNumber",
-    );
-  }
-  if ("status" in data && data.status !== undefined) {
-    validated.status = assertEnum(data.status, INVOICE_STATUSES, "status");
-  }
-  if ("issuedAt" in data && data.issuedAt !== undefined) {
-    validated.issuedAt = toDate(data.issuedAt, "issuedAt");
-  }
-  if ("dueDate" in data && data.dueDate !== undefined) {
-    validated.dueDate = toDate(data.dueDate, "dueDate");
-  }
+  if ("status" in validated) patch.status = validated.status;
+  if ("issuedAt" in validated) patch.issued_at = validated.issuedAt;
+  if ("dueDate" in validated) patch.due_date = validated.dueDate;
 
-  return validated;
+  return patch;
 }
 
 class InvoiceService {
   async getAll(): Promise<Invoice[]> {
-    return [...invoices];
+    const rows = await prisma.invoices.findMany({ orderBy: ORDER_BY_ID });
+    return rows.map(toInvoice);
   }
 
   async getById(id: ID): Promise<Invoice | null> {
-    return invoices.find((invoice) => invoice.id === id) ?? null;
+    const row = await prisma.invoices.findUnique({ where: { id } });
+    return row ? toInvoice(row) : null;
   }
 
   async create(data: CreateInvoiceInput): Promise<Invoice> {
-    const validated = validateCreateInput(data);
+    const input = parseInput(CreateInvoiceSchema, data);
+    const customerId = await assertCustomerId(input.customerId);
+    const serviceId = await assertOptionalServiceId(input.serviceId);
     const timestamp = now();
-    const invoice: Invoice = {
-      ...validated,
-      id: nextId("inv", invoices),
-      createdAt: timestamp,
-      updatedAt: timestamp,
-    };
-    invoices.push(invoice);
-    return invoice;
+
+    const existing = await prisma.invoices.findMany({ select: { id: true } });
+    const id = nextId("inv", existing);
+
+    const row = await prisma.invoices.create({
+      data: {
+        id,
+        customer_id: customerId,
+        service_id: serviceId ?? null,
+        amount_cents: BigInt(input.amountCents),
+        currency: input.currency,
+        invoice_number: input.invoiceNumber,
+        status: input.status,
+        issued_at: input.issuedAt,
+        due_date: input.dueDate,
+        created_at: timestamp,
+        updated_at: timestamp,
+      },
+    });
+
+    return toInvoice(row);
   }
 
   async update(id: ID, data: UpdateInvoiceInput): Promise<Invoice | null> {
-    const index = invoices.findIndex((invoice) => invoice.id === id);
-    if (index === -1) return null;
+    const previous = await this.getById(id);
+    if (!previous) return null;
 
-    const validated = validateUpdateInput(data);
-    const updated: Invoice = {
-      ...invoices[index],
-      ...validated,
-      id,
-      updatedAt: now(),
-    };
-    invoices[index] = updated;
-    return updated;
+    const validated = parseInput(UpdateInvoiceSchema, data);
+    if (validated.customerId !== undefined) {
+      validated.customerId = await assertCustomerId(validated.customerId);
+    }
+    // serviceId is nullable: presence (even undefined) means "set/clear it".
+    if ("serviceId" in validated) {
+      validated.serviceId = await assertOptionalServiceId(validated.serviceId);
+    }
+    const row = await prisma.invoices.update({
+      where: { id },
+      data: toUpdatePatch(validated),
+    });
+
+    return toInvoice(row);
   }
 
   async delete(id: ID): Promise<boolean> {
-    const index = invoices.findIndex((invoice) => invoice.id === id);
-    if (index === -1) return false;
-    invoices.splice(index, 1);
+    const existing = await prisma.invoices.findUnique({
+      where: { id },
+      select: { id: true },
+    });
+    if (!existing) return false;
+
+    await prisma.invoices.delete({ where: { id } });
     return true;
   }
 
   async getByCustomerId(customerId: ID): Promise<Invoice[]> {
-    return invoices.filter((invoice) => invoice.customerId === customerId);
+    const rows = await prisma.invoices.findMany({
+      where: { customer_id: customerId },
+      orderBy: ORDER_BY_ID,
+    });
+    return rows.map(toInvoice);
   }
 
   async getByStatus(status: InvoiceStatus): Promise<Invoice[]> {
-    return invoices.filter((invoice) => invoice.status === status);
+    const rows = await prisma.invoices.findMany({
+      where: { status },
+      orderBy: ORDER_BY_ID,
+    });
+    return rows.map(toInvoice);
   }
 
   async getByServiceId(serviceId: ID): Promise<Invoice[]> {
-    return invoices.filter((invoice) => invoice.serviceId === serviceId);
+    const rows = await prisma.invoices.findMany({
+      where: { service_id: serviceId },
+      orderBy: ORDER_BY_ID,
+    });
+    return rows.map(toInvoice);
   }
 
   async getUnpaid(): Promise<Invoice[]> {
-    return invoices.filter(
-      (invoice) =>
-        invoice.status === "sent" || invoice.status === "overdue",
-    );
+    const rows = await prisma.invoices.findMany({
+      where: { status: { in: ["sent", "overdue"] } },
+      orderBy: ORDER_BY_ID,
+    });
+    return rows.map(toInvoice);
   }
 
   async getOverdue(asOf: Date = now()): Promise<Invoice[]> {
-    return invoices.filter(
-      (invoice) =>
-        invoice.status === "overdue" ||
-        (invoice.status === "sent" && invoice.dueDate < asOf),
-    );
+    const rows = await prisma.invoices.findMany({
+      where: {
+        OR: [
+          { status: "overdue" },
+          { AND: [{ status: "sent" }, { due_date: { lt: asOf } }] },
+        ],
+      },
+      orderBy: ORDER_BY_ID,
+    });
+    return rows.map(toInvoice);
   }
 }
 

@@ -1,54 +1,23 @@
-import type { AppointmentStatus } from "@/types/appointment";
+import {
+  APPOINTMENT_STATUSES,
+  INVOICE_STATUSES,
+  LEAD_SOURCES,
+  LEAD_STATUSES,
+} from "@/lib/schemas/enums";
 import type { InvoiceStatus } from "@/types/invoice";
-import type { LeadSource, LeadStatus } from "@/types/lead";
 import type { ReportSummary } from "@/types/report";
 import { appointmentService } from "./appointment.service";
 import { invoiceService } from "./invoice.service";
 import { leadService } from "./lead.service";
 import { taskService } from "./task.service";
 
-const LEAD_STATUSES: LeadStatus[] = [
-  "new",
-  "contacted",
-  "qualified",
-  "appointment_scheduled",
-  "converted",
-  "lost",
-];
-
-const LEAD_SOURCES: LeadSource[] = [
-  "website",
-  "whatsapp",
-  "facebook",
-  "instagram",
-  "google",
-  "referral",
-  "walk_in",
-  "phone",
-];
-
-const APPOINTMENT_STATUSES: AppointmentStatus[] = [
-  "scheduled",
-  "confirmed",
-  "completed",
-  "cancelled",
-  "no_show",
-];
-
-const INVOICE_STATUSES: InvoiceStatus[] = [
-  "draft",
-  "sent",
-  "paid",
-  "overdue",
-  "cancelled",
-];
-
+// Business grouping (not a base domain vocabulary): invoices that count as billed.
 const BILLED_STATUSES: InvoiceStatus[] = ["sent", "paid", "overdue"];
 
 function countByField<T extends string, Item>(
   items: Item[],
   field: keyof Item,
-  values: T[],
+  values: readonly T[],
 ): Record<T, number> {
   return Object.fromEntries(
     values.map((value) => [

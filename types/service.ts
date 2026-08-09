@@ -1,10 +1,8 @@
 import { BaseEntity, ID, type WithIsoDates } from "./common";
+import type { ServiceStatus } from "@/lib/schemas/enums";
 
-export type ServiceStatus =
-  | "planned"
-  | "in_progress"
-  | "completed"
-  | "cancelled";
+// Source of truth: lib/schemas/enums.ts.
+export type { ServiceStatus };
 
 export interface Service extends BaseEntity {
   customerId: ID;

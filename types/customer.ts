@@ -1,10 +1,8 @@
 import { BaseEntity, ID, type WithIsoDates } from "./common";
+import type { CustomerLifecycleStatus } from "@/lib/schemas/enums";
 
-export type CustomerLifecycleStatus =
-  | "onboarding"
-  | "active"
-  | "inactive"
-  | "churned";
+// Source of truth: lib/schemas/enums.ts.
+export type { CustomerLifecycleStatus };
 
 export interface Customer extends BaseEntity {
   /** Source of truth for conversion: one Customer per Lead. */

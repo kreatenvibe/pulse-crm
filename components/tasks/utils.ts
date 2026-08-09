@@ -2,14 +2,8 @@ import type { CustomerDto } from "@/types/customer";
 import type { LeadDto } from "@/types/lead";
 import type { TaskDto, TaskPriority, TaskStatus } from "@/types/task";
 
-export const TASK_STATUSES: TaskStatus[] = [
-  "todo",
-  "in_progress",
-  "done",
-  "cancelled",
-];
-
-export const TASK_PRIORITIES: TaskPriority[] = ["low", "medium", "high"];
+// Single source of truth for domain vocabularies: lib/schemas/enums.ts.
+export { TASK_PRIORITIES, TASK_STATUSES } from "@/lib/schemas/enums";
 
 export type TaskViewMode = "open" | "overdue" | "due_today" | "completed";
 

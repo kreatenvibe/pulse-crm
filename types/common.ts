@@ -1,5 +1,7 @@
 // types/common.ts
 
+import type { EntityType } from "@/lib/schemas/enums";
+
 export type ID = string;
 
 export interface BaseEntity {
@@ -8,14 +10,8 @@ export interface BaseEntity {
   updatedAt: Date;
 }
 
-export type EntityType =
-  | "lead"
-  | "customer"
-  | "appointment"
-  | "task"
-  | "service"
-  | "invoice"
-  | "note";
+// Source of truth: lib/schemas/enums.ts.
+export type { EntityType };
 
 /** JSON/API wire format: Date fields become ISO strings. */
 export type IsoDateString = string;

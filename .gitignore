@@ -36,6 +36,13 @@ yarn-error.log*
 # vercel
 .vercel
 
+# AI assistant skill caches (regenerated from skills-lock.json)
+/.agents/
+/.claude/
+/.windsurf/
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+/lib/generated/prisma

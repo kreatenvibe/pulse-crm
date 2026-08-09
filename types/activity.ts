@@ -1,15 +1,9 @@
 import { BaseEntity, EntityType, ID, type WithIsoDates } from "./common";
+import type { ActivityType } from "@/lib/schemas/enums";
 
-// Notes are a separate entity; add "note_created" here later if the timeline should surface them.
-export type ActivityType =
-  | "call"
-  | "email"
-  | "whatsapp"
-  | "meeting"
-  | "status_change"
-  | "created"
-  | "updated"
-  | "assigned";
+// Source of truth: lib/schemas/enums.ts.
+// Notes are a separate entity; add "note_created" there later if the timeline should surface them.
+export type { ActivityType };
 
 export interface Activity extends BaseEntity {
   entityType: EntityType;

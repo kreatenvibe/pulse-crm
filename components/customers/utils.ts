@@ -5,12 +5,8 @@ import type {
 
 export type { CustomerDto };
 
-export const CUSTOMER_LIFECYCLE_STATUSES: CustomerLifecycleStatus[] = [
-  "onboarding",
-  "active",
-  "inactive",
-  "churned",
-];
+// Single source of truth for domain vocabularies: lib/schemas/enums.ts.
+export { CUSTOMER_LIFECYCLE_STATUSES } from "@/lib/schemas/enums";
 
 export type SortOrder = "newest" | "oldest";
 

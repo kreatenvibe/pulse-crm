@@ -1,5 +1,7 @@
-import { users } from "@/data/users";
-import { DEFAULT_PAGE_SIZE, paginate } from "@/lib/pagination";
+import { DEFAULT_PAGE_SIZE } from "@/lib/pagination";
+import { prisma } from "@/lib/prisma";
+import { Prisma } from "@/lib/generated/prisma/client";
+import type { leads as LeadRow } from "@/lib/generated/prisma/client";
 import type { ID, PaginatedResult, PaginationParams } from "@/types/common";
 import type {
   ConvertLeadResult,
@@ -7,11 +9,12 @@ import type {
   LeadDetails,
 } from "@/types/lead-details";
 import type { Lead, LeadPriority, LeadSource, LeadStatus } from "@/types/lead";
-import { leads } from "@/data/leads";
-import { activities } from "@/data/activities";
-import { appointments } from "@/data/appointments";
-import { notes } from "@/data/notes";
-import { tasks } from "@/data/tasks";
+import {
+  CreateLeadSchema,
+  UpdateLeadSchema,
+  type CreateLeadInput,
+  type UpdateLeadInput,
+} from "@/lib/schemas/lead.schema";
 import { activityService } from "./activity.service";
 import { appointmentService } from "./appointment.service";
 import { customerService } from "./customer.service";
@@ -19,164 +22,148 @@ import { ServiceError } from "./errors";
 import { nextId, now } from "./helpers";
 import { noteService } from "./note.service";
 import { taskService } from "./task.service";
-import {
-  assertEnum,
-  assertOptionalString,
-  assertRequiredString,
-  assertTags,
-  assertUserId,
-  toOptionalDate,
-} from "./validation";
+import { assertUserId, parseInput } from "./validation";
 
+export type { CreateLeadInput, UpdateLeadInput };
 
-export type CreateLeadInput = Omit<Lead, "id" | "createdAt" | "updatedAt">;
-export type UpdateLeadInput = Partial<CreateLeadInput>;
+/** Stable order: zero-padded ids sort identically to the original /data array. */
+const ORDER_BY_ID = { id: "asc" } as const;
 
-const LEAD_STATUSES: LeadStatus[] = [
-  "new",
-  "contacted",
-  "qualified",
-  "appointment_scheduled",
-  "converted",
-  "lost",
-];
+/** Map a Prisma `leads` row (snake_case, nullable) to the domain `Lead`. */
+function toLead(row: LeadRow): Lead {
+  return {
+    id: row.id,
+    name: row.name,
+    email: row.email ?? undefined,
+    phone: row.phone,
+    company: row.company ?? undefined,
+    status: row.status as LeadStatus,
+    source: row.source as LeadSource,
+    priority: row.priority as LeadPriority,
+    assignedTo: row.assigned_to,
+    message: row.message ?? undefined,
+    tags: row.tags,
+    lastContactedAt: row.last_contacted_at ?? undefined,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
 
-const LEAD_SOURCES: LeadSource[] = [
-  "website",
-  "whatsapp",
-  "facebook",
-  "instagram",
-  "google",
-  "referral",
-  "walk_in",
-  "phone",
-];
-
-const LEAD_PRIORITIES: LeadPriority[] = ["low", "medium", "high"];
-
-function resolveAssignee(userId: ID): LeadAssignee {
-  const user = users.find((entry) => entry.id === userId);
+async function resolveAssignee(userId: ID): Promise<LeadAssignee> {
+  const user = await prisma.users.findUnique({
+    where: { id: userId },
+    select: { name: true },
+  });
   return {
     id: userId,
     name: user?.name ?? userId,
   };
 }
 
-function validateCreateInput(data: CreateLeadInput): CreateLeadInput {
-  return {
-    name: assertRequiredString(data.name, "name"),
-    email: assertOptionalString(data.email, "email"),
-    phone: assertRequiredString(data.phone, "phone"),
-    company: assertOptionalString(data.company, "company"),
-    status: assertEnum(data.status, LEAD_STATUSES, "status"),
-    source: assertEnum(data.source, LEAD_SOURCES, "source"),
-    priority: assertEnum(data.priority, LEAD_PRIORITIES, "priority"),
-    assignedTo: assertUserId(data.assignedTo),
-    message: assertOptionalString(data.message, "message"),
-    tags: assertTags(data.tags ?? []),
-    lastContactedAt: toOptionalDate(data.lastContactedAt, "lastContactedAt"),
-  };
+/** Translate a validated partial update into a Prisma column patch. */
+function toUpdatePatch(validated: UpdateLeadInput): Prisma.leadsUncheckedUpdateInput {
+  const patch: Prisma.leadsUncheckedUpdateInput = { updated_at: now() };
+
+  if ("name" in validated) patch.name = validated.name;
+  if ("email" in validated) patch.email = validated.email ?? null;
+  if ("phone" in validated) patch.phone = validated.phone;
+  if ("company" in validated) patch.company = validated.company ?? null;
+  if ("status" in validated) patch.status = validated.status;
+  if ("source" in validated) patch.source = validated.source;
+  if ("priority" in validated) patch.priority = validated.priority;
+  if ("assignedTo" in validated) patch.assigned_to = validated.assignedTo;
+  if ("message" in validated) patch.message = validated.message ?? null;
+  if ("tags" in validated) patch.tags = validated.tags;
+  if ("lastContactedAt" in validated) {
+    patch.last_contacted_at = validated.lastContactedAt ?? null;
+  }
+
+  return patch;
 }
 
-function validateUpdateInput(data: UpdateLeadInput): UpdateLeadInput {
-  const validated: UpdateLeadInput = {};
-
-  if ("name" in data && data.name !== undefined) {
-    validated.name = assertRequiredString(data.name, "name");
-  }
-  if ("email" in data) {
-    validated.email = assertOptionalString(data.email, "email");
-  }
-  if ("phone" in data && data.phone !== undefined) {
-    validated.phone = assertRequiredString(data.phone, "phone");
-  }
-  if ("company" in data) {
-    validated.company = assertOptionalString(data.company, "company");
-  }
-  if ("status" in data && data.status !== undefined) {
-    validated.status = assertEnum(data.status, LEAD_STATUSES, "status");
-  }
-  if ("source" in data && data.source !== undefined) {
-    validated.source = assertEnum(data.source, LEAD_SOURCES, "source");
-  }
-  if ("priority" in data && data.priority !== undefined) {
-    validated.priority = assertEnum(data.priority, LEAD_PRIORITIES, "priority");
-  }
-  if ("assignedTo" in data && data.assignedTo !== undefined) {
-    validated.assignedTo = assertUserId(data.assignedTo);
-  }
-  if ("message" in data) {
-    validated.message = assertOptionalString(data.message, "message");
-  }
-  if ("tags" in data && data.tags !== undefined) {
-    validated.tags = assertTags(data.tags);
-  }
-  if ("lastContactedAt" in data) {
-    validated.lastContactedAt = toOptionalDate(
-      data.lastContactedAt,
-      "lastContactedAt",
-    );
-  }
-
-  return validated;
-}
-
-function getLeadDependencies(id: ID): string[] {
+/** Names of tables that still reference this lead, in a stable report order. */
+async function getLeadDependencies(id: ID): Promise<string[]> {
   const deps: string[] = [];
 
-  if (tasks.some((task) => task.leadId === id)) deps.push("tasks");
-  if (appointments.some((appt) => appt.leadId === id)) {
-    deps.push("appointments");
-  }
-  if (notes.some((note) => note.entityType === "lead" && note.entityId === id)) {
-    deps.push("notes");
-  }
-  if (
-    activities.some(
-      (activity) => activity.entityType === "lead" && activity.entityId === id,
-    )
-  ) {
-    deps.push("activities");
-  }
+  const [taskCount, apptCount, noteCount, activityCount] = await Promise.all([
+    prisma.tasks.count({ where: { lead_id: id } }),
+    prisma.appointments.count({ where: { lead_id: id } }),
+    prisma.notes.count({ where: { entity_type: "lead", entity_id: id } }),
+    prisma.activities.count({ where: { entity_type: "lead", entity_id: id } }),
+  ]);
+
+  if (taskCount > 0) deps.push("tasks");
+  if (apptCount > 0) deps.push("appointments");
+  if (noteCount > 0) deps.push("notes");
+  if (activityCount > 0) deps.push("activities");
 
   return deps;
 }
 
 class LeadService {
   async getAll(): Promise<Lead[]> {
-    return [...leads];
+    const rows = await prisma.leads.findMany({ orderBy: ORDER_BY_ID });
+    return rows.map(toLead);
   }
 
   /**
    * Paginated list for `GET /api/leads?page=&pageSize=`.
-   * Uses in-memory slicing today; same `{ data, pagination }` shape for future DB paging.
+   * Pages at the database level; keeps the same `{ data, pagination }` shape and
+   * clamping rules the in-memory `paginate()` helper used.
    */
   async list(
     params: Partial<PaginationParams> = {},
   ): Promise<PaginatedResult<Lead>> {
     const page = params.page ?? 1;
     const pageSize = params.pageSize ?? DEFAULT_PAGE_SIZE;
-    return paginate(await this.getAll(), page, pageSize);
+
+    const safePageSize = Math.max(1, Math.floor(pageSize) || DEFAULT_PAGE_SIZE);
+    const totalItems = await prisma.leads.count();
+    const totalPages =
+      totalItems === 0 ? 0 : Math.ceil(totalItems / safePageSize);
+    const safePage =
+      totalPages === 0
+        ? 1
+        : Math.min(Math.max(1, Math.floor(page) || 1), totalPages);
+
+    const rows = await prisma.leads.findMany({
+      orderBy: ORDER_BY_ID,
+      skip: (safePage - 1) * safePageSize,
+      take: safePageSize,
+    });
+
+    return {
+      data: rows.map(toLead),
+      pagination: {
+        page: safePage,
+        pageSize: safePageSize,
+        totalItems,
+        totalPages,
+      },
+    };
   }
 
   async getById(id: ID): Promise<Lead | null> {
-    return leads.find((lead) => lead.id === id) ?? null;
+    const row = await prisma.leads.findUnique({ where: { id } });
+    return row ? toLead(row) : null;
   }
 
   async getDetails(id: ID): Promise<LeadDetails | null> {
     const lead = await this.getById(id);
     if (!lead) return null;
 
-    const [activities, notes, tasks, appointments] = await Promise.all([
-      activityService.getTimeline("lead", id),
-      noteService.getForEntity("lead", id),
-      taskService.getByLeadId(id),
-      appointmentService.getByLeadId(id),
-    ]);
+    const [assignedUser, activities, notes, tasks, appointments] =
+      await Promise.all([
+        resolveAssignee(lead.assignedTo),
+        activityService.getTimeline("lead", id),
+        noteService.getForEntity("lead", id),
+        taskService.getByLeadId(id),
+        appointmentService.getByLeadId(id),
+      ]);
 
     return {
       lead,
-      assignedUser: resolveAssignee(lead.assignedTo),
+      assignedUser,
       activities,
       notes,
       tasks,
@@ -185,31 +172,48 @@ class LeadService {
   }
 
   async create(data: CreateLeadInput): Promise<Lead> {
-    const validated = validateCreateInput(data);
+    const input = parseInput(CreateLeadSchema, data);
+    const assignedTo = await assertUserId(input.assignedTo);
     const timestamp = now();
-    const lead: Lead = {
-      ...validated,
-      id: nextId("lead", leads),
-      createdAt: timestamp,
-      updatedAt: timestamp,
-    };
-    leads.push(lead);
-    return lead;
+
+    const existing = await prisma.leads.findMany({ select: { id: true } });
+    const id = nextId("lead", existing);
+
+    const row = await prisma.leads.create({
+      data: {
+        id,
+        name: input.name,
+        email: input.email ?? null,
+        phone: input.phone,
+        status: input.status,
+        source: input.source,
+        priority: input.priority,
+        company: input.company ?? null,
+        message: input.message ?? null,
+        tags: input.tags,
+        assigned_to: assignedTo,
+        last_contacted_at: input.lastContactedAt ?? null,
+        created_at: timestamp,
+        updated_at: timestamp,
+      },
+    });
+
+    return toLead(row);
   }
 
   async update(id: ID, data: UpdateLeadInput): Promise<Lead | null> {
-    const index = leads.findIndex((lead) => lead.id === id);
-    if (index === -1) return null;
+    const previous = await this.getById(id);
+    if (!previous) return null;
 
-    const previous = leads[index];
-    const validated = validateUpdateInput(data);
-    const updated: Lead = {
-      ...previous,
-      ...validated,
-      id,
-      updatedAt: now(),
-    };
-    leads[index] = updated;
+    const validated = parseInput(UpdateLeadSchema, data);
+    if (validated.assignedTo !== undefined) {
+      validated.assignedTo = await assertUserId(validated.assignedTo);
+    }
+    const row = await prisma.leads.update({
+      where: { id },
+      data: toUpdatePatch(validated),
+    });
+    const updated = toLead(row);
 
     if (validated.status && validated.status !== previous.status) {
       await activityService.create({
@@ -226,10 +230,16 @@ class LeadService {
   }
 
   async delete(id: ID): Promise<boolean> {
-    const index = leads.findIndex((lead) => lead.id === id);
-    if (index === -1) return false;
+    const existing = await prisma.leads.findUnique({
+      where: { id },
+      select: { id: true },
+    });
+    if (!existing) return false;
 
-    const customer = await customerService.getByLeadId(id);
+    const customer = await prisma.customers.findUnique({
+      where: { lead_id: id },
+      select: { id: true },
+    });
     if (customer) {
       throw new ServiceError(
         "Cannot delete lead: a converted customer exists for this lead",
@@ -237,7 +247,7 @@ class LeadService {
       );
     }
 
-    const deps = getLeadDependencies(id);
+    const deps = await getLeadDependencies(id);
     if (deps.length > 0) {
       throw new ServiceError(
         `Cannot delete lead: dependent ${deps.join(", ")} exist`,
@@ -245,7 +255,7 @@ class LeadService {
       );
     }
 
-    leads.splice(index, 1);
+    await prisma.leads.delete({ where: { id } });
     return true;
   }
 
@@ -302,26 +312,46 @@ class LeadService {
   }
 
   async getByStatus(status: LeadStatus): Promise<Lead[]> {
-    return leads.filter((lead) => lead.status === status);
+    const rows = await prisma.leads.findMany({
+      where: { status },
+      orderBy: ORDER_BY_ID,
+    });
+    return rows.map(toLead);
   }
 
   async getByAssignee(userId: ID): Promise<Lead[]> {
-    return leads.filter((lead) => lead.assignedTo === userId);
+    const rows = await prisma.leads.findMany({
+      where: { assigned_to: userId },
+      orderBy: ORDER_BY_ID,
+    });
+    return rows.map(toLead);
   }
 
   async getBySource(source: LeadSource): Promise<Lead[]> {
-    return leads.filter((lead) => lead.source === source);
+    const rows = await prisma.leads.findMany({
+      where: { source },
+      orderBy: ORDER_BY_ID,
+    });
+    return rows.map(toLead);
   }
 
   async getByPriority(priority: LeadPriority): Promise<Lead[]> {
-    return leads.filter((lead) => lead.priority === priority);
+    const rows = await prisma.leads.findMany({
+      where: { priority },
+      orderBy: ORDER_BY_ID,
+    });
+    return rows.map(toLead);
   }
 
   async search(query: string): Promise<Lead[]> {
     const q = query.trim().toLowerCase();
     if (!q) return this.getAll();
 
-    return leads.filter((lead) => {
+    // Tags are a Postgres text[]; a substring match across joined tags can't be
+    // expressed with Prisma's typed array filters, so we apply the original
+    // case-insensitive substring predicate in-process to preserve behavior.
+    const all = await this.getAll();
+    return all.filter((lead) => {
       const haystack = [
         lead.name,
         lead.email,

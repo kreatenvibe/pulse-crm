@@ -2,25 +2,8 @@ import type { LeadDto, LeadSource, LeadStatus } from "@/types/lead";
 
 export type { LeadDto };
 
-export const LEAD_STATUSES: LeadStatus[] = [
-  "new",
-  "contacted",
-  "qualified",
-  "appointment_scheduled",
-  "converted",
-  "lost",
-];
-
-export const LEAD_SOURCES: LeadSource[] = [
-  "website",
-  "whatsapp",
-  "facebook",
-  "instagram",
-  "google",
-  "referral",
-  "walk_in",
-  "phone",
-];
+// Single source of truth for domain vocabularies: lib/schemas/enums.ts.
+export { LEAD_SOURCES, LEAD_STATUSES } from "@/lib/schemas/enums";
 
 export type SortOrder = "newest" | "oldest";
 

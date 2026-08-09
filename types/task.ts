@@ -1,8 +1,8 @@
 import { BaseEntity, ID, type WithIsoDates } from "./common";
+import type { TaskPriority, TaskStatus } from "@/lib/schemas/enums";
 
-export type TaskPriority = "low" | "medium" | "high";
-
-export type TaskStatus = "todo" | "in_progress" | "done" | "cancelled";
+// Source of truth: lib/schemas/enums.ts.
+export type { TaskPriority, TaskStatus };
 
 export interface Task extends BaseEntity {
   title: string;

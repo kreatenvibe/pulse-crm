@@ -1,11 +1,8 @@
 import { BaseEntity, ID, type WithIsoDates } from "./common";
+import type { AppointmentStatus } from "@/lib/schemas/enums";
 
-export type AppointmentStatus =
-  | "scheduled"
-  | "confirmed"
-  | "completed"
-  | "cancelled"
-  | "no_show";
+// Source of truth: lib/schemas/enums.ts.
+export type { AppointmentStatus };
 
 export interface Appointment extends BaseEntity {
   leadId?: ID;
