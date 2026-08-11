@@ -11,7 +11,7 @@ import {
   CustomerTimeline,
 } from "@/components/customers";
 import { RelatedTasks } from "@/components/tasks";
-import { EmptyState, ErrorState, LoadingState } from "@/components/ui";
+import { Button, EmptyState, ErrorState, LoadingState } from "@/components/ui";
 import { useCustomerDetails } from "@/hooks";
 
 export default function CustomerDetailsPage() {
@@ -22,7 +22,7 @@ export default function CustomerDetailsPage() {
 
   return (
     <div className="flex w-full flex-col">
-      <div className="border-b border-border px-5 py-5 sm:px-6 lg:px-8">
+      <div className="flex flex-wrap items-start justify-between gap-3 border-b border-border px-5 py-5 sm:px-6 lg:px-8">
         <p className="text-sm text-foreground-muted">
           <Link
             href="/customers"
@@ -35,6 +35,11 @@ export default function CustomerDetailsPage() {
             {data?.customer.primaryContact ?? id}
           </span>
         </p>
+        {data ? (
+          <Link href={`/customers/${id}/edit`}>
+            <Button>Edit customer</Button>
+          </Link>
+        ) : null}
       </div>
 
       {loading ? (

@@ -82,9 +82,12 @@ export function AppointmentSchedule({
                       {formatTimeRange(appointment.start, appointment.end)}
                     </td>
                     <td className="px-5 py-3.5">
-                      <p className="font-medium text-foreground">
+                      <Link
+                        href={`/appointments/${appointment.id}`}
+                        className="font-medium text-brand hover:text-brand-hover hover:underline"
+                      >
                         {appointment.title}
-                      </p>
+                      </Link>
                     </td>
                     <td className="px-5 py-3.5 text-foreground-secondary">
                       {appointment.relatedHref ? (

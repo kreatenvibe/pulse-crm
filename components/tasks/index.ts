@@ -1,5 +1,6 @@
 export { RelatedTasks } from "./RelatedTasks";
 export { TaskFilters } from "./TaskFilters";
+export { TaskForm } from "./TaskForm";
 export { TaskSummary } from "./TaskSummary";
 export { TaskTable } from "./TaskTable";
 export {

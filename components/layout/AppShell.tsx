@@ -9,6 +9,8 @@ import {
   ClipboardList,
   LayoutDashboard,
   Menu,
+  Package,
+  Receipt,
   Settings,
   Users,
   UserRound,
@@ -33,6 +35,8 @@ const navIcons: Record<string, LucideIcon> = {
   "/customers": Users,
   "/appointments": Calendar,
   "/tasks": ClipboardList,
+  "/services": Package,
+  "/invoices": Receipt,
   "/reports": BarChart3,
   "/settings": Settings,
 };

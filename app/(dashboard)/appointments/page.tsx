@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Link from "next/link";
 import {
   AppointmentFilters,
   AppointmentSchedule,
@@ -10,6 +11,7 @@ import {
   type ViewMode,
 } from "@/components/appointments";
 import {
+  Button,
   ErrorState,
   LoadingState,
   Pagination,
@@ -82,13 +84,18 @@ export default function AppointmentsPage() {
 
   return (
     <div className="flex w-full flex-col gap-6 px-5 py-6 sm:px-6 lg:px-8">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-          Appointments
-        </h1>
-        <p className="mt-1 text-sm text-foreground-muted">
-          View upcoming meetings or browse appointments by month.
-        </p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight text-foreground">
+            Appointments
+          </h1>
+          <p className="mt-1 text-sm text-foreground-muted">
+            View upcoming meetings or browse appointments by month.
+          </p>
+        </div>
+        <Link href="/appointments/new">
+          <Button variant="primary">New appointment</Button>
+        </Link>
       </div>
 
       <AppointmentFilters

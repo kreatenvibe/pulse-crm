@@ -8,6 +8,7 @@ export { serviceService } from "./service.service";
 export { invoiceService } from "./invoice.service";
 export { dashboardService } from "./dashboard.service";
 export { reportService } from "./report.service";
+export { userService } from "./user.service";
 
 export type { CreateLeadInput, UpdateLeadInput } from "./lead.service";
 export type {

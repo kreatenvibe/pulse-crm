@@ -1,5 +1,6 @@
 export { CustomerAppointments } from "./CustomerAppointments";
 export { CustomerFilters } from "./CustomerFilters";
+export { CustomerForm } from "./CustomerForm";
 export { CustomerInvoices } from "./CustomerInvoices";
 export { CustomerProfile } from "./CustomerProfile";
 export { CustomerServices } from "./CustomerServices";

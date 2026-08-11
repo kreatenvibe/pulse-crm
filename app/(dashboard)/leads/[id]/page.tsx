@@ -9,7 +9,7 @@ import {
   LeadTimeline,
 } from "@/components/leads";
 import { RelatedTasks } from "@/components/tasks";
-import { EmptyState, ErrorState, LoadingState } from "@/components/ui";
+import { Button, EmptyState, ErrorState, LoadingState } from "@/components/ui";
 import { useLeadDetails } from "@/hooks";
 
 export default function LeadDetailsPage() {
@@ -30,22 +30,29 @@ export default function LeadDetailsPage() {
 
   return (
     <div className="flex w-full flex-col">
-      <div className="border-b border-border px-5 py-5 sm:px-6 lg:px-8">
-        <p className="text-sm text-foreground-muted">
-          <Link
-            href="/leads"
-            className="text-brand hover:text-brand-hover hover:underline"
-          >
-            Leads
+      <div className="flex flex-wrap items-start justify-between gap-3 border-b border-border px-5 py-5 sm:px-6 lg:px-8">
+        <div>
+          <p className="text-sm text-foreground-muted">
+            <Link
+              href="/leads"
+              className="text-brand hover:text-brand-hover hover:underline"
+            >
+              Leads
+            </Link>
+            <span className="mx-1.5 text-foreground-muted">/</span>
+            <span className="text-foreground-secondary">
+              {data?.lead.name ?? id}
+            </span>
+          </p>
+          <h1 className="mt-1 text-2xl font-semibold tracking-tight text-foreground">
+            {data?.lead.name ?? "Lead details"}
+          </h1>
+        </div>
+        {data ? (
+          <Link href={`/leads/${id}/edit`}>
+            <Button>Edit lead</Button>
           </Link>
-          <span className="mx-1.5 text-foreground-muted">/</span>
-          <span className="text-foreground-secondary">
-            {data?.lead.name ?? id}
-          </span>
-        </p>
-        <h1 className="mt-1 text-2xl font-semibold tracking-tight text-foreground">
-          {data?.lead.name ?? "Lead details"}
-        </h1>
+        ) : null}
       </div>
 
       {loading ? (

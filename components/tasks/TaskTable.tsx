@@ -46,12 +46,13 @@ export function TaskTable({
           id: "title",
           header: "Title",
           cell: (task) => (
-            <span
-              className="block max-w-64 truncate font-medium text-foreground"
+            <Link
+              href={`/tasks/${task.id}`}
+              className="block max-w-64 truncate font-medium text-brand hover:text-brand-hover hover:underline"
               title={task.title}
             >
               {task.title}
-            </span>
+            </Link>
           ),
         },
         {

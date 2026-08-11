@@ -1,6 +1,6 @@
 // types/user.ts
 
-import { BaseEntity } from "./common";
+import { BaseEntity, type WithIsoDates } from "./common";
 import type { UserRole } from "@/lib/schemas/enums";
 
 // Source of truth: lib/schemas/enums.ts.
@@ -15,3 +15,6 @@ export interface User extends BaseEntity {
 
   isActive: boolean;
 }
+
+/** User as returned by `/api/users` (dates are ISO strings). */
+export type UserDto = WithIsoDates<User>;

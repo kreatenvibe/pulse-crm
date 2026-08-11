@@ -20,6 +20,8 @@ export const navGroups: NavGroup[] = [
       { label: "Customers", href: "/customers" },
       { label: "Appointments", href: "/appointments" },
       { label: "Tasks", href: "/tasks" },
+      { label: "Services", href: "/services" },
+      { label: "Invoices", href: "/invoices" },
     ],
   },
   {

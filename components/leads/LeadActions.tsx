@@ -130,7 +130,7 @@ export function LeadActions({
               value={status}
               onChange={(event) => setStatus(event.target.value as LeadStatus)}
               disabled={actionLoading}
-              className={`${inputClassName} w-auto min-w-[8.5rem]`}
+              className={`${inputClassName} w-auto min-w-34`}
             >
               {LEAD_STATUSES.map((item) => (
                 <option key={item} value={item}>

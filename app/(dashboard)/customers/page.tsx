@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import {
   CustomerFilters,
   CustomerTable,
@@ -8,6 +9,7 @@ import {
   type SortOrder,
 } from "@/components/customers";
 import {
+  Button,
   ErrorState,
   LoadingState,
   Pagination,
@@ -51,12 +53,19 @@ export default function CustomersPage() {
   return (
     <div className="flex w-full flex-col">
       <div className="border-b border-border px-5 py-6 sm:px-6 lg:px-8">
-        <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-          Customers
-        </h1>
-        <p className="mt-1 text-sm text-foreground-muted">
-          Search, filter, and review converted customers.
-        </p>
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h1 className="text-2xl font-semibold tracking-tight text-foreground">
+              Customers
+            </h1>
+            <p className="mt-1 text-sm text-foreground-muted">
+              Search, filter, and review converted customers.
+            </p>
+          </div>
+          <Link href="/customers/new">
+            <Button variant="primary">New customer</Button>
+          </Link>
+        </div>
       </div>
 
       <div className="border-b border-border px-5 py-4 sm:px-6 lg:px-8">

@@ -5,6 +5,23 @@ export function formatLabel(value: string): string {
     .join(" ");
 }
 
+/**
+ * Format a monetary amount stored as integer cents into a currency string.
+ * `currency` is a free-text ISO-ish code (e.g. "INR", "USD"); if it is not a
+ * valid Intl currency, fall back to a plain "<code> <major>.<cents>" rendering.
+ */
+export function formatMoney(amountCents: number, currency: string): string {
+  const major = amountCents / 100;
+  try {
+    return new Intl.NumberFormat("en-IN", {
+      style: "currency",
+      currency,
+    }).format(major);
+  } catch {
+    return `${currency} ${major.toFixed(2)}`;
+  }
+}
+
 export function formatDate(value?: string | null): string {
   if (!value) return "—";
   const date = new Date(value);
