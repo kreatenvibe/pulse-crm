@@ -5,24 +5,16 @@ import {
   DataTable,
   EmptyState,
   StatusBadge,
-  type StatusBadgeTone,
 } from "@/components/ui";
 import { formatDate, formatLabel, formatMoney } from "@/lib/format";
-import type { InvoiceDto, InvoiceStatus } from "@/types/invoice";
+import { INVOICE_STATUS_TONE } from "@/lib/status-tone";
+import type { InvoiceDto } from "@/types/invoice";
 
 type InvoiceTableProps = {
   invoices: InvoiceDto[];
   /** Resolved customer labels by id, for the Customer column. */
   customerNameById: Map<string, string>;
   emptyMessage?: string;
-};
-
-const STATUS_TONE: Record<InvoiceStatus, StatusBadgeTone> = {
-  draft: "neutral",
-  sent: "info",
-  paid: "success",
-  overdue: "danger",
-  cancelled: "neutral",
 };
 
 export function InvoiceTable({
@@ -88,7 +80,7 @@ export function InvoiceTable({
           id: "status",
           header: "Status",
           cell: (invoice) => (
-            <StatusBadge tone={STATUS_TONE[invoice.status]}>
+            <StatusBadge tone={INVOICE_STATUS_TONE[invoice.status]}>
               {formatLabel(invoice.status)}
             </StatusBadge>
           ),

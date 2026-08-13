@@ -88,20 +88,20 @@ export function FormField({
             </span>
           ) : null}
         </label>
-        {/* Always-rendered helper slot: reserves one line so controls stay
-            aligned across grid columns even when a field has no description. */}
-        <p
-          id={descriptionId}
-          className="mb-1 min-h-4 text-xs leading-4 text-foreground-muted"
-        >
-          {description}
-        </p>
         {children}
-        {/* Reserved message slot so rows don't jump when an error appears or
-            clears. FormError still owns role="alert" and the errorId link. */}
-        <div className="mt-1 min-h-5">
-          <FormError id={errorId} message={error} />
-        </div>
+        {/* Helper text and error sit below the control (like the field mockups)
+            and are rendered only when present — no reserved blank lines, which is
+            what kept the old forms so tall. Rows may differ slightly in height
+            across grid columns; that is the intended density trade. */}
+        {description ? (
+          <p
+            id={descriptionId}
+            className="mt-1 text-xs leading-4 text-foreground-muted"
+          >
+            {description}
+          </p>
+        ) : null}
+        {error ? <FormError id={errorId} message={error} className="mt-1" /> : null}
       </div>
     </FormFieldContext.Provider>
   );

@@ -44,7 +44,7 @@ export function SearchInput({
           onChange={(event) => onChange(event.target.value)}
           placeholder={placeholder}
           aria-label={hideLabel ? label : undefined}
-          className="h-9 w-full rounded-lg border border-border bg-surface py-2 pr-3 pl-9 text-sm text-foreground outline-none placeholder:text-foreground-muted transition-[border-color,box-shadow] hover:border-border-strong focus:border-brand focus:ring-2 focus:ring-ring/20"
+          className="h-9 w-full rounded border border-outline-variant bg-surface-container-lowest py-2 pr-3 pl-9 text-sm text-on-surface outline-none placeholder:text-secondary transition-[border-color,box-shadow] hover:border-outline focus:border-brand focus:ring-2 focus:ring-focus-ring"
         />
       </div>
     </div>

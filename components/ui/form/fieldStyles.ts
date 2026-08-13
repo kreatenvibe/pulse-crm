@@ -10,4 +10,4 @@
  * FormField sets `aria-invalid` automatically via context.
  */
 export const fieldClassName =
-  "w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground outline-none transition-[border-color,box-shadow] placeholder:text-foreground-muted hover:border-border-strong focus:border-brand focus:ring-2 focus:ring-ring/20 disabled:cursor-not-allowed disabled:opacity-40 aria-invalid:border-danger aria-invalid:focus:border-danger aria-invalid:focus:ring-danger/20";
+  "w-full rounded border border-outline-variant bg-surface-container-lowest px-3 py-2 text-sm text-on-surface outline-none transition-[border-color,box-shadow] placeholder:text-secondary hover:border-outline focus:border-brand focus:ring-2 focus:ring-focus-ring disabled:cursor-not-allowed disabled:opacity-40 aria-invalid:border-error aria-invalid:focus:border-error aria-invalid:focus:ring-focus-ring-danger";

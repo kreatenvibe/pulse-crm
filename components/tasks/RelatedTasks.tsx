@@ -1,23 +1,11 @@
-import { StatusBadge, type StatusBadgeTone } from "@/components/ui";
+import { StatusBadge } from "@/components/ui";
 import { formatDate, formatLabel } from "@/lib/format";
-import type { TaskDto, TaskPriority, TaskStatus } from "@/types/task";
+import { TASK_PRIORITY_TONE, TASK_STATUS_TONE } from "@/lib/status-tone";
+import type { TaskDto } from "@/types/task";
 
 type RelatedTasksProps = {
   tasks: TaskDto[];
   emptyMessage?: string;
-};
-
-const STATUS_TONE: Record<TaskStatus, StatusBadgeTone> = {
-  todo: "info",
-  in_progress: "brand",
-  done: "success",
-  cancelled: "neutral",
-};
-
-const PRIORITY_TONE: Record<TaskPriority, StatusBadgeTone> = {
-  low: "neutral",
-  medium: "warning",
-  high: "danger",
 };
 
 export function RelatedTasks({
@@ -29,7 +17,7 @@ export function RelatedTasks({
   );
 
   return (
-    <section className="h-full">
+    <section className="h-full border border-border bg-surface">
       <div className="border-b border-border px-5 py-4 sm:px-6">
         <h2 className="text-sm font-semibold text-foreground">Tasks</h2>
         <p className="mt-0.5 text-xs text-foreground-muted">
@@ -59,14 +47,14 @@ export function RelatedTasks({
                     </p>
                   ) : null}
                 </div>
-                <StatusBadge tone={STATUS_TONE[task.status]}>
+                <StatusBadge tone={TASK_STATUS_TONE[task.status]}>
                   {formatLabel(task.status)}
                 </StatusBadge>
               </div>
               <div className="mt-1.5 flex flex-wrap items-center gap-2 text-xs text-foreground-muted">
                 <span>Due {formatDate(task.dueDate)}</span>
                 <span aria-hidden>·</span>
-                <StatusBadge tone={PRIORITY_TONE[task.priority]}>
+                <StatusBadge tone={TASK_PRIORITY_TONE[task.priority]}>
                   {formatLabel(task.priority)}
                 </StatusBadge>
                 <span aria-hidden>·</span>

@@ -16,17 +16,7 @@ const STATUS_ORDER: LeadStatus[] = [
   "lost",
 ];
 
-const STATUS_PILL: Record<LeadStatus, string> = {
-  new: "border-pipeline-new/40 text-pipeline-new",
-  contacted: "border-pipeline-contacted/40 text-pipeline-contacted",
-  qualified: "border-pipeline-qualified/40 text-pipeline-qualified",
-  appointment_scheduled:
-    "border-pipeline-appointment/40 text-pipeline-appointment",
-  converted: "border-pipeline-converted/40 text-pipeline-converted",
-  lost: "border-pipeline-lost/40 text-pipeline-lost",
-};
-
-const STATUS_BAR: Record<LeadStatus, string> = {
+const STATUS_DOT: Record<LeadStatus, string> = {
   new: "bg-pipeline-new",
   contacted: "bg-pipeline-contacted",
   qualified: "bg-pipeline-qualified",
@@ -37,11 +27,15 @@ const STATUS_BAR: Record<LeadStatus, string> = {
 
 export function PipelineOverview({ byStatus, total }: PipelineOverviewProps) {
   return (
-    <section>
-      <div className="flex items-start justify-between gap-3 border-b border-border pb-4">
+    <section className="border border-border bg-surface">
+      <div className="flex items-center justify-between gap-3 border-b border-border p-5">
         <div>
-          <h2 className="text-sm font-semibold text-foreground">Lead pipeline</h2>
-          <p className="mt-0.5 text-xs text-foreground-muted">Leads by status</p>
+          <h2 className="text-sm font-semibold text-foreground">
+            Active lead pipeline
+          </h2>
+          <p className="mt-0.5 text-xs text-foreground-muted">
+            Stage distribution
+          </p>
         </div>
         <Link
           href="/leads"
@@ -52,37 +46,56 @@ export function PipelineOverview({ byStatus, total }: PipelineOverviewProps) {
       </div>
 
       {total === 0 ? (
-        <div className="py-10 text-center text-sm text-foreground-muted">
+        <div className="py-12 text-center text-sm text-foreground-muted">
           No leads in the pipeline.
         </div>
       ) : (
-        <ul>
-          {STATUS_ORDER.map((status) => {
-            const count = byStatus[status] ?? 0;
-            const percent = total > 0 ? Math.round((count / total) * 100) : 0;
+        <div className="p-5">
+          <div className="mb-2 flex items-center justify-between text-xs text-foreground-muted">
+            <span>Stage distribution</span>
+            <span className="tabular-nums">{total} total leads</span>
+          </div>
 
-            return (
-              <li key={status} className="border-b border-border py-3.5 last:border-b-0">
-                <div className="flex items-center justify-between gap-4 text-sm">
-                  <span
-                    className={`inline-flex items-center rounded-md border bg-transparent px-2 py-0.5 text-[11px] font-medium tracking-wide uppercase ${STATUS_PILL[status]}`}
-                  >
-                    {formatLabel(status)} · {count}
-                  </span>
-                  <span className="tabular-nums text-sm font-medium text-foreground-secondary">
-                    {percent}%
-                  </span>
+          <div className="flex h-3 w-full overflow-hidden rounded-full border border-border">
+            {STATUS_ORDER.map((status) => {
+              const count = byStatus[status] ?? 0;
+              if (count === 0) return null;
+              const percent = (count / total) * 100;
+
+              return (
+                <div
+                  key={status}
+                  className={`h-full ${STATUS_DOT[status]}`}
+                  style={{ width: `${percent}%` }}
+                  title={`${formatLabel(status)}: ${count}`}
+                />
+              );
+            })}
+          </div>
+
+          <div className="mt-5 grid grid-cols-2 gap-x-4 gap-y-4 sm:grid-cols-3">
+            {STATUS_ORDER.map((status) => {
+              const count = byStatus[status] ?? 0;
+              const percent = total > 0 ? Math.round((count / total) * 100) : 0;
+
+              return (
+                <div key={status}>
+                  <div className="mb-1 flex items-center gap-1.5">
+                    <span
+                      className={`size-2 shrink-0 rounded-full ${STATUS_DOT[status]}`}
+                    />
+                    <span className="text-xs font-semibold text-foreground">
+                      {formatLabel(status)}
+                    </span>
+                  </div>
+                  <div className="text-sm text-foreground-secondary tabular-nums">
+                    {count} ({percent}%)
+                  </div>
                 </div>
-                <div className="mt-2.5 h-1 overflow-hidden rounded-full bg-surface-muted">
-                  <div
-                    className={`h-full rounded-full ${STATUS_BAR[status]}`}
-                    style={{ width: `${percent}%` }}
-                  />
-                </div>
-              </li>
-            );
-          })}
-        </ul>
+              );
+            })}
+          </div>
+        </div>
       )}
     </section>
   );

@@ -6,21 +6,13 @@ import {
   DataTable,
   EmptyState,
   StatusBadge,
-  type StatusBadgeTone,
 } from "@/components/ui";
 import { formatLabel } from "@/lib/format";
-import type { CustomerLifecycleStatus } from "@/types/customer";
+import { CUSTOMER_LIFECYCLE_TONE } from "@/lib/status-tone";
 import type { CustomerDto } from "./utils";
 
 type CustomerTableProps = {
   customers: CustomerDto[];
-};
-
-const LIFECYCLE_TONE: Record<CustomerLifecycleStatus, StatusBadgeTone> = {
-  onboarding: "info",
-  active: "success",
-  inactive: "neutral",
-  churned: "danger",
 };
 
 export function CustomerTable({ customers }: CustomerTableProps) {
@@ -91,7 +83,7 @@ export function CustomerTable({ customers }: CustomerTableProps) {
           id: "lifecycle",
           header: "Lifecycle",
           cell: (customer) => (
-            <StatusBadge tone={LIFECYCLE_TONE[customer.lifecycleStatus]}>
+            <StatusBadge tone={CUSTOMER_LIFECYCLE_TONE[customer.lifecycleStatus]}>
               {formatLabel(customer.lifecycleStatus)}
             </StatusBadge>
           ),

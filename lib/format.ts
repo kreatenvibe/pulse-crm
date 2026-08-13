@@ -9,16 +9,26 @@ export function formatLabel(value: string): string {
  * Format a monetary amount stored as integer cents into a currency string.
  * `currency` is a free-text ISO-ish code (e.g. "INR", "USD"); if it is not a
  * valid Intl currency, fall back to a plain "<code> <major>.<cents>" rendering.
+ *
+ * By default the currency's natural fraction digits are used (e.g. paise for
+ * INR). Pass `maximumFractionDigits: 0` for whole-unit rendering (summary KPIs
+ * and compact lists).
  */
-export function formatMoney(amountCents: number, currency: string): string {
+export function formatMoney(
+  amountCents: number,
+  currency: string,
+  options?: { maximumFractionDigits?: number },
+): string {
   const major = amountCents / 100;
+  const { maximumFractionDigits } = options ?? {};
   try {
     return new Intl.NumberFormat("en-IN", {
       style: "currency",
       currency,
+      ...(maximumFractionDigits !== undefined ? { maximumFractionDigits } : {}),
     }).format(major);
   } catch {
-    return `${currency} ${major.toFixed(2)}`;
+    return `${currency} ${major.toFixed(maximumFractionDigits ?? 2)}`;
   }
 }
 

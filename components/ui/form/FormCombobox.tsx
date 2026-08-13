@@ -176,10 +176,10 @@ function buildClassNames(
           : "cursor-text hover:border-border-strong",
         invalid
           ? state.isFocused
-            ? "border-danger ring-2 ring-danger/20"
+            ? "border-danger ring-2 ring-focus-ring-danger"
             : "border-danger"
           : state.isFocused
-            ? "border-brand ring-2 ring-ring/20"
+            ? "border-brand ring-2 ring-focus-ring"
             : "border-border",
       ].join(" "),
     valueContainer: () => "flex flex-1 flex-wrap items-center gap-1 px-3 py-1",

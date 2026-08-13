@@ -73,8 +73,10 @@ export default function TasksPage() {
     <div className="flex w-full flex-col gap-6 px-5 py-6 sm:px-6 lg:px-8">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Tasks</h1>
-          <p className="mt-1 text-sm text-zinc-500">
+          <h1 className="text-2xl font-semibold tracking-tight text-foreground">
+            Tasks
+          </h1>
+          <p className="mt-1 text-sm text-foreground-secondary">
             Track follow-ups and to-dos across leads and customers.
           </p>
         </div>

@@ -5,21 +5,28 @@ import { usePathname } from "next/navigation";
 import {
   Activity,
   BarChart3,
+  Bell,
   Calendar,
+  ChevronRight,
   ClipboardList,
+  HelpCircle,
+  History,
   LayoutDashboard,
+  LogOut,
   Menu,
   Package,
+  Plus,
   Receipt,
   Settings,
-  Users,
   UserRound,
+  Users,
   X,
   type LucideIcon,
 } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import {
   isNavItemActive,
+  mainNavItems,
   navGroups,
   settingsNavItem,
   type NavItem,
@@ -50,11 +57,12 @@ function NavLinks({
 }) {
   function linkClass(href: string) {
     const active = isNavItemActive(pathname, href);
+    // Stitch nav item: rounded-lg row; active = red text/fill + right border.
     return [
-      "flex items-center gap-2.5 rounded-md px-2.5 py-2 text-sm transition-colors",
+      "flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors",
       active
-        ? "bg-sidebar-active font-semibold text-sidebar-foreground-active"
-        : "font-normal text-sidebar-foreground hover:bg-sidebar-hover hover:text-sidebar-foreground-active",
+        ? "border-r-4 border-brand bg-brand-soft font-bold text-brand"
+        : "text-secondary hover:bg-surface-container-low hover:text-on-surface",
     ].join(" ");
   }
 
@@ -70,7 +78,7 @@ function NavLinks({
         onClick={onNavigate}
         aria-current={active ? "page" : undefined}
       >
-        <Icon className="size-4 shrink-0 stroke-[1.5]" aria-hidden />
+        <Icon className="size-5 shrink-0 stroke-[1.5]" aria-hidden />
         {item.label}
       </Link>
     );
@@ -79,20 +87,39 @@ function NavLinks({
   return (
     <>
       <nav
-        className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto"
+        className="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto px-4"
         aria-label="Main"
       >
-        {navGroups.map((group) => (
-          <div key={group.id} className="flex flex-col gap-0.5">
-            <p className="px-2.5 pb-1.5 text-[10px] font-medium tracking-[0.08em] text-foreground-muted uppercase">
-              {group.label}
-            </p>
-            {group.items.map(renderLink)}
-          </div>
-        ))}
+        {navGroups.map((group) => group.items.map(renderLink))}
       </nav>
-      <div className="shrink-0 border-t border-sidebar-border pt-3">
-        {renderLink(settingsNavItem)}
+
+      <div className="mt-auto space-y-4 px-4 pt-4">
+        {/* <Link
+          href="/leads"
+          onClick={onNavigate}
+          className="flex w-full items-center justify-center gap-2 rounded bg-brand py-2 text-sm font-semibold text-foreground-inverse transition-colors hover:bg-brand-hover"
+        >
+          <Plus className="size-5" aria-hidden />
+          New Lead
+        </Link> */}
+
+        <div className="space-y-1 border-t border-outline-variant pt-4">
+          {renderLink(settingsNavItem)}
+          <a
+            href="#"
+            className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-secondary transition-colors hover:bg-surface-container-low hover:text-on-surface"
+          >
+            <HelpCircle className="size-5 shrink-0 stroke-[1.5]" aria-hidden />
+            Help
+          </a>
+          <a
+            href="#"
+            className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-secondary transition-colors hover:bg-surface-container-low hover:text-on-surface"
+          >
+            <LogOut className="size-5 shrink-0 stroke-[1.5]" aria-hidden />
+            Logout
+          </a>
+        </div>
       </div>
     </>
   );
@@ -100,20 +127,38 @@ function NavLinks({
 
 function Brand() {
   return (
-    <Link
-      href="/dashboard"
-      className="flex items-center gap-2.5 text-sm font-semibold tracking-tight text-foreground"
-    >
-      <span className="flex size-7 items-center justify-center rounded-md bg-foreground text-foreground-inverse">
-        <Activity className="size-3.5" aria-hidden />
+    <Link href="/dashboard" className="flex items-center gap-3">
+      <span className="flex size-8 items-center justify-center rounded bg-brand text-foreground-inverse">
+        <Activity className="size-5" aria-hidden />
       </span>
       <span className="leading-tight">
-        Pulse CRM
-        <span className="mt-0.5 block text-[11px] font-normal text-foreground-muted">
-          Workspace
+        <span className="block text-lg font-bold tracking-tight text-brand">
+          Pulse CRM
         </span>
+        {/* <span className="block text-[11px] font-semibold text-secondary">
+          Enterprise Edition
+        </span> */}
       </span>
     </Link>
+  );
+}
+
+/** Breadcrumb trail derived from the active route (Stitch top app bar). */
+function Breadcrumbs({ pathname }: { pathname: string }) {
+  const current = [...mainNavItems, settingsNavItem].find((item) =>
+    isNavItemActive(pathname, item.href),
+  );
+
+  return (
+    <div className="flex items-center gap-2 text-xs font-medium text-secondary">
+      <span>Pulse CRM</span>
+      {current ? (
+        <>
+          <ChevronRight className="size-4 shrink-0" aria-hidden />
+          <span className="text-on-surface">{current.label}</span>
+        </>
+      ) : null}
+    </div>
   );
 }
 
@@ -142,12 +187,12 @@ export function AppShell({ children }: AppShellProps) {
 
   return (
     <div className="flex min-h-full bg-background">
-      {/* ~16–18% width; flush against main — dividers meet this edge */}
-      <aside className="sticky top-0 hidden h-screen w-56 shrink-0 flex-col border-r border-sidebar-border bg-sidebar lg:flex xl:w-60">
-        <div className="shrink-0 px-4 py-5">
+      {/* Fixed 240px navigation, flush against the workspace edge */}
+      <aside className="sticky top-0 hidden h-screen w-60 shrink-0 flex-col border-r border-outline-variant bg-surface py-6 lg:flex">
+        <div className="mb-8 px-6">
           <Brand />
         </div>
-        <div className="flex min-h-0 flex-1 flex-col px-2.5 pb-4">
+        <div className="flex min-h-0 flex-1 flex-col">
           <NavLinks pathname={pathname} />
         </div>
       </aside>
@@ -155,7 +200,7 @@ export function AppShell({ children }: AppShellProps) {
       {mobileOpen ? (
         <button
           type="button"
-          className="fixed inset-0 z-40 bg-foreground/20 lg:hidden"
+          className="fixed inset-0 z-40 bg-inverse-surface/30 lg:hidden"
           aria-label="Close navigation menu"
           onClick={() => setMobileOpen(false)}
         />
@@ -163,42 +208,65 @@ export function AppShell({ children }: AppShellProps) {
 
       <aside
         className={[
-          "fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-sidebar-border bg-sidebar transition-transform duration-200 lg:hidden",
+          "fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-outline-variant bg-surface py-6 transition-transform duration-200 lg:hidden",
           mobileOpen ? "translate-x-0" : "-translate-x-full",
         ].join(" ")}
         aria-hidden={!mobileOpen}
       >
-        <div className="flex items-center justify-between px-4 py-4">
+        <div className="mb-8 flex items-center justify-between px-6">
           <Brand />
           <button
             type="button"
-            className="rounded-md p-2 text-sidebar-foreground hover:bg-sidebar-hover hover:text-sidebar-foreground-active"
+            className="rounded-lg p-2 text-secondary hover:bg-surface-container-low hover:text-on-surface"
             aria-label="Close navigation menu"
             onClick={() => setMobileOpen(false)}
           >
             <X className="size-5" aria-hidden />
           </button>
         </div>
-        <div className="flex min-h-0 flex-1 flex-col px-2.5 pb-4">
-          <NavLinks
-            pathname={pathname}
-            onNavigate={() => setMobileOpen(false)}
-          />
+        <div className="flex min-h-0 flex-1 flex-col">
+          <NavLinks pathname={pathname} onNavigate={() => setMobileOpen(false)} />
         </div>
       </aside>
 
-      <div className="flex min-w-0 flex-1 flex-col bg-surface">
-        <header className="flex items-center gap-3 border-b border-border bg-surface px-4 py-3 lg:hidden">
-          <button
-            type="button"
-            className="rounded-md p-2 text-foreground-secondary hover:bg-surface-muted"
-            aria-label="Open navigation menu"
-            aria-expanded={mobileOpen}
-            onClick={() => setMobileOpen(true)}
-          >
-            <Menu className="size-5" aria-hidden />
-          </button>
-          <span className="text-sm font-semibold text-foreground">Pulse CRM</span>
+      <div className="flex min-w-0 flex-1 flex-col bg-surface-container-lowest">
+        {/* Stitch top app bar — breadcrumbs + quick actions */}
+        <header className="sticky top-0 z-30 flex h-12 w-full items-center justify-between border-b border-outline-variant bg-surface-container-lowest px-4 lg:px-6">
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              className="rounded-lg p-1.5 text-secondary hover:bg-surface-container-low hover:text-on-surface lg:hidden"
+              aria-label="Open navigation menu"
+              aria-expanded={mobileOpen}
+              onClick={() => setMobileOpen(true)}
+            >
+              <Menu className="size-5" aria-hidden />
+            </button>
+            <Breadcrumbs pathname={pathname} />
+          </div>
+
+          <div className="flex items-center gap-4">
+            <button
+              type="button"
+              className="text-secondary transition-colors hover:text-brand"
+              aria-label="Notifications"
+            >
+              <Bell className="size-5 stroke-[1.5]" aria-hidden />
+            </button>
+            <button
+              type="button"
+              className="text-secondary transition-colors hover:text-brand"
+              aria-label="History"
+            >
+              <History className="size-5 stroke-[1.5]" aria-hidden />
+            </button>
+            <span
+              className="flex size-7 items-center justify-center rounded-full bg-secondary-container text-on-surface"
+              aria-hidden
+            >
+              <UserRound className="size-4 stroke-[1.5]" />
+            </span>
+          </div>
         </header>
 
         {/* No horizontal padding — section dividers meet the sidebar border */}

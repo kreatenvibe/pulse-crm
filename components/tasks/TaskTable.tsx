@@ -5,28 +5,14 @@ import {
   DataTable,
   EmptyState,
   StatusBadge,
-  type StatusBadgeTone,
 } from "@/components/ui";
 import { formatDate, formatLabel } from "@/lib/format";
-import type { TaskPriority, TaskStatus } from "@/types/task";
+import { TASK_PRIORITY_TONE, TASK_STATUS_TONE } from "@/lib/status-tone";
 import type { EnrichedTask } from "./utils";
 
 type TaskTableProps = {
   tasks: EnrichedTask[];
   emptyMessage?: string;
-};
-
-const STATUS_TONE: Record<TaskStatus, StatusBadgeTone> = {
-  todo: "info",
-  in_progress: "brand",
-  done: "success",
-  cancelled: "neutral",
-};
-
-const PRIORITY_TONE: Record<TaskPriority, StatusBadgeTone> = {
-  low: "neutral",
-  medium: "warning",
-  high: "danger",
 };
 
 export function TaskTable({
@@ -90,7 +76,7 @@ export function TaskTable({
           id: "priority",
           header: "Priority",
           cell: (task) => (
-            <StatusBadge tone={PRIORITY_TONE[task.priority]}>
+            <StatusBadge tone={TASK_PRIORITY_TONE[task.priority]}>
               {formatLabel(task.priority)}
             </StatusBadge>
           ),
@@ -99,7 +85,7 @@ export function TaskTable({
           id: "status",
           header: "Status",
           cell: (task) => (
-            <StatusBadge tone={STATUS_TONE[task.status]}>
+            <StatusBadge tone={TASK_STATUS_TONE[task.status]}>
               {formatLabel(task.status)}
             </StatusBadge>
           ),

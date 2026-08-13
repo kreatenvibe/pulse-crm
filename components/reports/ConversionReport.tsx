@@ -1,4 +1,5 @@
-import { StatCard } from "@/components/dashboard/StatCard";
+import { Percent, TrendingUp, UserRound } from "lucide-react";
+import { KpiCard } from "@/components/dashboard";
 
 type ConversionReportProps = {
   total: number;
@@ -12,19 +13,25 @@ export function ConversionReport({
   conversionRate,
 }: ConversionReportProps) {
   return (
-    <section className="rounded border border-zinc-200">
-      <div className="border-b border-zinc-200 px-4 py-3">
-        <h2 className="text-sm font-semibold">Lead conversion</h2>
-        <p className="text-xs text-zinc-500">
-          Converted leads as a share of all leads
-        </p>
-      </div>
-
-      <div className="grid gap-4 p-4 sm:grid-cols-3">
-        <StatCard label="Conversion rate" value={`${conversionRate}%`} />
-        <StatCard label="Converted leads" value={converted} />
-        <StatCard label="Total leads" value={total} />
-      </div>
-    </section>
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+      <KpiCard
+        label="Conversion rate"
+        value={`${conversionRate}%`}
+        hint="Converted share of all leads"
+        hintIcon={<TrendingUp className="size-3.5" aria-hidden />}
+        icon={<Percent className="size-5 stroke-[1.5]" aria-hidden />}
+        accent
+      />
+      <KpiCard
+        label="Converted leads"
+        value={converted}
+        icon={<TrendingUp className="size-5 stroke-[1.5]" aria-hidden />}
+      />
+      <KpiCard
+        label="Total leads"
+        value={total}
+        icon={<UserRound className="size-5 stroke-[1.5]" aria-hidden />}
+      />
+    </div>
   );
 }

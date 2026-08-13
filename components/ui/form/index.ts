@@ -4,4 +4,8 @@ export { FormInput } from "./FormInput";
 export { FormSelect } from "./FormSelect";
 export { FormTextarea } from "./FormTextarea";
 export { FormCombobox, type FormComboboxOption } from "./FormCombobox";
+export { FormRadioGroup } from "./FormRadioGroup";
+export { FormSegmented } from "./FormSegmented";
+export { FormCheckbox } from "./FormCheckbox";
+export { FormSwitch } from "./FormSwitch";
 export { fieldClassName } from "./fieldStyles";

@@ -1,20 +1,15 @@
-import { StatusBadge, type StatusBadgeTone } from "@/components/ui";
+import { StatusBadge } from "@/components/ui";
 import { formatDateTime, formatLabel } from "@/lib/format";
-import type { AppointmentDto, AppointmentStatus } from "@/types/appointment";
+import { APPOINTMENT_STATUS_TONE } from "@/lib/status-tone";
+import type { AppointmentDto } from "@/types/appointment";
 
-type CustomerAppointmentsProps = {
+type AppointmentsPanelProps = {
   appointments: AppointmentDto[];
+  /** Shown when the entity has no appointments at all (e.g. per lead/customer). */
+  emptyMessage: string;
 };
 
-const STATUS_TONE: Record<AppointmentStatus, StatusBadgeTone> = {
-  scheduled: "info",
-  confirmed: "success",
-  completed: "neutral",
-  cancelled: "danger",
-  no_show: "warning",
-};
-
-function AppointmentList({
+function AppointmentGroup({
   title,
   appointments,
   emptyMessage,
@@ -25,7 +20,7 @@ function AppointmentList({
 }) {
   return (
     <div>
-      <h3 className="border-b border-border px-5 py-2.5 text-[11px] font-medium tracking-[0.06em] text-foreground-muted uppercase sm:px-6">
+      <h3 className="border-b border-border px-5 py-2.5 eyebrow text-foreground-muted sm:px-6">
         {title}
       </h3>
       {appointments.length === 0 ? (
@@ -48,7 +43,7 @@ function AppointmentList({
                     {formatDateTime(appointment.start)}
                   </p>
                 </div>
-                <StatusBadge tone={STATUS_TONE[appointment.status]}>
+                <StatusBadge tone={APPOINTMENT_STATUS_TONE[appointment.status]}>
                   {formatLabel(appointment.status)}
                 </StatusBadge>
               </div>
@@ -60,9 +55,14 @@ function AppointmentList({
   );
 }
 
-export function CustomerAppointments({
+/**
+ * Appointment list grouped into upcoming/past, shared by lead and customer
+ * detail pages. `emptyMessage` covers the "no appointments at all" case.
+ */
+export function AppointmentsPanel({
   appointments,
-}: CustomerAppointmentsProps) {
+  emptyMessage,
+}: AppointmentsPanelProps) {
   const now = Date.now();
   const upcoming = appointments
     .filter((appointment) => new Date(appointment.start).getTime() >= now)
@@ -76,7 +76,7 @@ export function CustomerAppointments({
     );
 
   return (
-    <section className="h-full">
+    <section className="h-full border border-border bg-surface">
       <div className="border-b border-border px-5 py-4 sm:px-6">
         <h2 className="text-sm font-semibold text-foreground">Appointments</h2>
         <p className="mt-0.5 text-xs text-foreground-muted">
@@ -86,16 +86,16 @@ export function CustomerAppointments({
 
       {appointments.length === 0 ? (
         <div className="px-5 py-10 text-center text-sm text-foreground-muted sm:px-6">
-          No appointments for this customer.
+          {emptyMessage}
         </div>
       ) : (
         <div>
-          <AppointmentList
+          <AppointmentGroup
             title="Upcoming"
             appointments={upcoming}
             emptyMessage="No upcoming appointments."
           />
-          <AppointmentList
+          <AppointmentGroup
             title="Past"
             appointments={past}
             emptyMessage="No past appointments."

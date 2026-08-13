@@ -1,100 +1,51 @@
-import {
-  Calendar,
-  Mail,
-  MessageCircle,
-  Phone,
-  RefreshCw,
-  UserPlus,
-  UserRoundPlus,
-  type LucideIcon,
-} from "lucide-react";
 import { formatLabel, formatRelativeTime } from "@/lib/format";
-import type { ActivityDto, ActivityType } from "@/types/activity";
+import type { ActivityDto } from "@/types/activity";
 
 type RecentActivityProps = {
   activities: ActivityDto[];
 };
 
-const ACTIVITY_STYLE: Record<
-  ActivityType,
-  { icon: LucideIcon; iconColor: string }
-> = {
-  call: {
-    icon: Phone,
-    iconColor: "text-info",
-  },
-  email: {
-    icon: Mail,
-    iconColor: "text-brand",
-  },
-  whatsapp: {
-    icon: MessageCircle,
-    iconColor: "text-success",
-  },
-  meeting: {
-    icon: Calendar,
-    iconColor: "text-warning",
-  },
-  status_change: {
-    icon: RefreshCw,
-    iconColor: "text-brand",
-  },
-  created: {
-    icon: UserPlus,
-    iconColor: "text-success",
-  },
-  updated: {
-    icon: RefreshCw,
-    iconColor: "text-neutral",
-  },
-  assigned: {
-    icon: UserRoundPlus,
-    iconColor: "text-info",
-  },
-};
-
 export function RecentActivity({ activities }: RecentActivityProps) {
   return (
-    <section>
-      <div className="border-b border-border pb-4">
+    <section className="flex h-full flex-col border border-border bg-surface">
+      <div className="border-b border-border p-5">
         <h2 className="text-sm font-semibold text-foreground">Recent activity</h2>
         <p className="mt-0.5 text-xs text-foreground-muted">Latest CRM events</p>
       </div>
 
       {activities.length === 0 ? (
-        <div className="py-10 text-center text-sm text-foreground-muted">
+        <div className="flex-1 py-12 text-center text-sm text-foreground-muted">
           No recent activity.
         </div>
       ) : (
-        <ul>
-          {activities.map((activity) => {
-            const style = ACTIVITY_STYLE[activity.type];
-            const Icon = style.icon;
-
-            return (
-              <li
-                key={activity.id}
-                className="flex items-start gap-3 border-b border-border py-3.5 last:border-b-0"
-              >
+        <div className="flex-1 p-5">
+          <ol className="relative ml-1.5 space-y-6 border-l border-border">
+            {activities.map((activity, index) => (
+              <li key={activity.id} className="relative pl-6">
                 <span
-                  className={`mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg bg-surface-muted ${style.iconColor}`}
-                >
-                  <Icon className="size-4 stroke-[1.5]" aria-hidden />
-                </span>
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm text-foreground">{activity.description}</p>
-                  <p className="mt-0.5 text-xs text-foreground-muted">
-                    {formatLabel(activity.type)} ·{" "}
-                    {formatLabel(activity.entityType)} · {activity.entityId}
-                  </p>
+                  className={`absolute top-1 -left-1.25 size-2.5 rounded-full border-2 bg-surface ${
+                    index === 0 ? "border-brand" : "border-border-strong"
+                  }`}
+                  aria-hidden
+                />
+                <div className="mb-0.5 flex items-start justify-between gap-2">
+                  <span className="text-sm font-semibold text-foreground">
+                    {formatLabel(activity.type)}
+                  </span>
+                  <span className="shrink-0 text-xs text-foreground-muted">
+                    {formatRelativeTime(activity.timestamp)}
+                  </span>
                 </div>
-                <span className="shrink-0 text-xs text-foreground-muted">
-                  {formatRelativeTime(activity.timestamp)}
-                </span>
+                <p className="text-sm text-foreground-secondary">
+                  {activity.description}
+                </p>
+                <p className="mt-0.5 text-xs text-foreground-muted">
+                  {formatLabel(activity.entityType)} · {activity.entityId}
+                </p>
               </li>
-            );
-          })}
-        </ul>
+            ))}
+          </ol>
+        </div>
       )}
     </section>
   );

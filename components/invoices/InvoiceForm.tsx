@@ -140,8 +140,8 @@ export function InvoiceForm({
   };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
-      <div className="grid gap-4 sm:grid-cols-2">
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+      <div className="grid gap-x-4 gap-y-4 sm:grid-cols-2">
         <FormField
           label="Invoice number"
           required

@@ -28,7 +28,9 @@ export function Pagination({ pagination, onPageChange }: PaginationProps) {
 
   return (
     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-      <p className="text-sm text-foreground-muted">{pageRangeLabel(pagination)}</p>
+      <p className="text-xs font-medium text-secondary">
+        {pageRangeLabel(pagination)}
+      </p>
 
       <div className="flex flex-wrap items-center gap-1">
         <button
@@ -36,10 +38,9 @@ export function Pagination({ pagination, onPageChange }: PaginationProps) {
           aria-label="Previous page"
           disabled={!canPrev}
           onClick={() => onPageChange(page - 1)}
-          className="inline-flex items-center gap-1 rounded-lg border border-border bg-surface px-2.5 py-1.5 text-sm text-foreground-secondary hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-40"
+          className="flex size-8 items-center justify-center rounded border border-outline-variant text-secondary transition-colors hover:bg-surface-container-low disabled:cursor-not-allowed disabled:opacity-40"
         >
           <ChevronLeft className="size-4" aria-hidden />
-          Previous
         </button>
 
         {pages.map((pageNumber) => {
@@ -53,8 +54,8 @@ export function Pagination({ pagination, onPageChange }: PaginationProps) {
               onClick={() => onPageChange(pageNumber)}
               className={
                 isActive
-                  ? "min-w-9 rounded-lg border border-brand bg-brand px-2.5 py-1.5 text-sm font-medium text-foreground-inverse"
-                  : "min-w-9 rounded-lg border border-border bg-surface px-2.5 py-1.5 text-sm text-foreground-secondary hover:bg-surface-muted"
+                  ? "flex size-8 items-center justify-center rounded bg-brand text-xs font-medium text-foreground-inverse"
+                  : "flex size-8 items-center justify-center rounded border border-outline-variant text-xs font-medium text-secondary transition-colors hover:bg-surface-container-low"
               }
             >
               {pageNumber}
@@ -67,9 +68,8 @@ export function Pagination({ pagination, onPageChange }: PaginationProps) {
           aria-label="Next page"
           disabled={!canNext}
           onClick={() => onPageChange(page + 1)}
-          className="inline-flex items-center gap-1 rounded-lg border border-border bg-surface px-2.5 py-1.5 text-sm text-foreground-secondary hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-40"
+          className="flex size-8 items-center justify-center rounded border border-outline-variant text-secondary transition-colors hover:bg-surface-container-low disabled:cursor-not-allowed disabled:opacity-40"
         >
-          Next
           <ChevronRight className="size-4" aria-hidden />
         </button>
       </div>

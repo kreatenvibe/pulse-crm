@@ -1,5 +1,7 @@
 export { Button } from "./Button";
 export { DataTable, type DataTableColumn } from "./DataTable";
+export { DetailHeader, DetailMeta } from "./DetailHeader";
+export { DetailSection, DetailField } from "./DetailSection";
 export { EmptyState } from "./EmptyState";
 export { ErrorState } from "./ErrorState";
 export { LoadingState } from "./LoadingState";
@@ -17,6 +19,10 @@ export {
   FormTextarea,
   FormCombobox,
   type FormComboboxOption,
+  FormRadioGroup,
+  FormSegmented,
+  FormCheckbox,
+  FormSwitch,
   fieldClassName,
   useFormFieldControl,
 } from "./form";

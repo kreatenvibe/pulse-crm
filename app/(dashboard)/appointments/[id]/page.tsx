@@ -2,18 +2,23 @@
 
 import { useMemo } from "react";
 import Link from "next/link";
+import { CalendarDays, Clock, UserRound } from "lucide-react";
 import { useParams } from "next/navigation";
 import {
   buildAppointmentLookups,
   enrichAppointment,
 } from "@/components/appointments";
+import { KpiCard } from "@/components/dashboard";
 import {
   Button,
+  DetailField,
+  DetailHeader,
+  DetailMeta,
+  DetailSection,
   EmptyState,
   ErrorState,
   LoadingState,
   StatusBadge,
-  type StatusBadgeTone,
 } from "@/components/ui";
 import {
   useAppointment,
@@ -21,16 +26,20 @@ import {
   useLeads,
   useUsers,
 } from "@/hooks";
-import { formatDateTime, formatLabel } from "@/lib/format";
-import type { AppointmentStatus } from "@/types/appointment";
+import { formatDate, formatLabel, formatTimeRange } from "@/lib/format";
+import { APPOINTMENT_STATUS_TONE } from "@/lib/status-tone";
 
-const STATUS_TONE: Record<AppointmentStatus, StatusBadgeTone> = {
-  scheduled: "info",
-  confirmed: "success",
-  completed: "neutral",
-  cancelled: "danger",
-  no_show: "warning",
-};
+function formatDuration(start: string, end: string): string {
+  const minutes = Math.round(
+    (new Date(end).getTime() - new Date(start).getTime()) / 60_000,
+  );
+  if (!Number.isFinite(minutes) || minutes <= 0) return "—";
+  const hours = Math.floor(minutes / 60);
+  const rest = minutes % 60;
+  if (hours === 0) return `${rest} min`;
+  if (rest === 0) return `${hours} hr`;
+  return `${hours} hr ${rest} min`;
+}
 
 export default function AppointmentDetailsPage() {
   const params = useParams<{ id: string }>();
@@ -56,30 +65,40 @@ export default function AppointmentDetailsPage() {
 
   return (
     <div className="flex w-full flex-col">
-      <div className="flex flex-wrap items-start justify-between gap-3 border-b border-border px-5 py-5 sm:px-6 lg:px-8">
-        <div>
-          <p className="text-sm text-foreground-muted">
-            <Link
-              href="/appointments"
-              className="text-brand hover:text-brand-hover hover:underline"
-            >
-              Appointments
+      <DetailHeader
+        backHref="/appointments"
+        backLabel="Appointments"
+        title={appointment?.title ?? id}
+        badges={
+          appointment ? (
+            <StatusBadge tone={APPOINTMENT_STATUS_TONE[appointment.status]}>
+              {formatLabel(appointment.status)}
+            </StatusBadge>
+          ) : null
+        }
+        meta={
+          appointment ? (
+            <>
+              <DetailMeta icon={<CalendarDays className="size-3.5" aria-hidden />}>
+                {formatDate(appointment.start)}
+              </DetailMeta>
+              <DetailMeta icon={<Clock className="size-3.5" aria-hidden />}>
+                {formatTimeRange(appointment.start, appointment.end)}
+              </DetailMeta>
+              <DetailMeta icon={<UserRound className="size-3.5" aria-hidden />}>
+                {assignedUserName}
+              </DetailMeta>
+            </>
+          ) : null
+        }
+        actions={
+          appointment ? (
+            <Link href={`/appointments/${id}/edit`}>
+              <Button variant="primary">Edit appointment</Button>
             </Link>
-            <span className="mx-1.5 text-foreground-muted">/</span>
-            <span className="text-foreground-secondary">
-              {appointment?.title ?? id}
-            </span>
-          </p>
-          <h1 className="mt-1 text-2xl font-semibold tracking-tight text-foreground">
-            {appointment?.title ?? "Appointment details"}
-          </h1>
-        </div>
-        {appointment ? (
-          <Link href={`/appointments/${id}/edit`}>
-            <Button>Edit appointment</Button>
-          </Link>
-        ) : null}
-      </div>
+          ) : null
+        }
+      />
 
       {loading ? (
         <div className="px-5 py-6 sm:px-6 lg:px-8">
@@ -94,49 +113,29 @@ export default function AppointmentDetailsPage() {
           <EmptyState message="Appointment not found." />
         </div>
       ) : (
-        <div className="px-5 py-6 sm:px-6 lg:px-8">
-          <dl className="grid max-w-2xl gap-4 sm:grid-cols-2">
-            <div>
-              <dt className="text-xs font-medium text-foreground-muted">
-                Status
-              </dt>
-              <dd className="mt-1">
-                <StatusBadge tone={STATUS_TONE[appointment.status]}>
-                  {formatLabel(appointment.status)}
-                </StatusBadge>
-              </dd>
-            </div>
+        <div className="flex flex-col gap-6 px-5 py-6 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <KpiCard
+              label="Date"
+              value={formatDate(appointment.start)}
+              icon={<CalendarDays className="size-5 stroke-[1.5]" aria-hidden />}
+            />
+            <KpiCard
+              label="Time"
+              value={formatTimeRange(appointment.start, appointment.end)}
+              icon={<Clock className="size-5 stroke-[1.5]" aria-hidden />}
+            />
+            <KpiCard
+              label="Duration"
+              value={formatDuration(appointment.start, appointment.end)}
+              icon={<Clock className="size-5 stroke-[1.5]" aria-hidden />}
+            />
+          </div>
 
-            <div>
-              <dt className="text-xs font-medium text-foreground-muted">
-                Assigned to
-              </dt>
-              <dd className="mt-1 text-sm text-foreground">
-                {assignedUserName}
-              </dd>
-            </div>
-
-            <div>
-              <dt className="text-xs font-medium text-foreground-muted">
-                Start
-              </dt>
-              <dd className="mt-1 text-sm text-foreground">
-                {formatDateTime(appointment.start)}
-              </dd>
-            </div>
-
-            <div>
-              <dt className="text-xs font-medium text-foreground-muted">End</dt>
-              <dd className="mt-1 text-sm text-foreground">
-                {formatDateTime(appointment.end)}
-              </dd>
-            </div>
-
-            <div>
-              <dt className="text-xs font-medium text-foreground-muted">
-                Related
-              </dt>
-              <dd className="mt-1 text-sm text-foreground">
+          <DetailSection title="Appointment details" subtitle="Ownership and links">
+            <dl className="grid gap-4 px-5 py-6 sm:grid-cols-2 sm:px-6">
+              <DetailField label="Assigned to">{assignedUserName}</DetailField>
+              <DetailField label="Related">
                 {enriched?.relatedHref ? (
                   <Link
                     href={enriched.relatedHref}
@@ -152,18 +151,16 @@ export default function AppointmentDetailsPage() {
                 ) : (
                   (enriched?.relatedLabel ?? "—")
                 )}
-              </dd>
-            </div>
+              </DetailField>
+            </dl>
 
-            <div className="sm:col-span-2">
-              <dt className="text-xs font-medium text-foreground-muted">
-                Notes
-              </dt>
-              <dd className="mt-1 whitespace-pre-wrap text-sm text-foreground">
+            <div className="border-t border-border px-5 py-5 sm:px-6">
+              <p className="text-xs font-medium text-foreground-muted">Notes</p>
+              <p className="mt-1.5 whitespace-pre-wrap text-sm text-foreground">
                 {appointment.notes?.trim() ? appointment.notes : "—"}
-              </dd>
+              </p>
             </div>
-          </dl>
+          </DetailSection>
         </div>
       )}
     </div>

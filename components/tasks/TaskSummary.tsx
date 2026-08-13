@@ -1,34 +1,44 @@
-import { StatCard } from "@/components/dashboard/StatCard";
+import {
+  AlertTriangle,
+  CalendarClock,
+  CheckCircle2,
+  ClipboardList,
+  type LucideIcon,
+} from "lucide-react";
+import { KpiCard } from "@/components/dashboard";
 import type { TaskViewMode } from "./utils";
 
 type TaskSummaryProps = {
   counts: Record<TaskViewMode, number>;
 };
 
-const SUMMARY_ITEMS: { key: TaskViewMode; label: string }[] = [
-  { key: "open", label: "Open tasks" },
-  { key: "overdue", label: "Overdue" },
-  { key: "due_today", label: "Due today" },
-  { key: "completed", label: "Completed" },
+const SUMMARY_ITEMS: {
+  key: TaskViewMode;
+  label: string;
+  icon: LucideIcon;
+  accent?: boolean;
+}[] = [
+  { key: "open", label: "Open tasks", icon: ClipboardList },
+  { key: "overdue", label: "Overdue", icon: AlertTriangle, accent: true },
+  { key: "due_today", label: "Due today", icon: CalendarClock },
+  { key: "completed", label: "Completed", icon: CheckCircle2 },
 ];
 
 export function TaskSummary({ counts }: TaskSummaryProps) {
   return (
-    <div className="grid gap-6 border-y border-border py-6 sm:grid-cols-2 lg:grid-cols-4 lg:gap-0 lg:divide-x lg:divide-border">
-      {SUMMARY_ITEMS.map((item, index) => (
-        <StatCard
-          key={item.key}
-          className={
-            index === 0
-              ? "lg:pr-8"
-              : index === SUMMARY_ITEMS.length - 1
-                ? "lg:pl-8"
-                : "lg:px-8"
-          }
-          label={item.label}
-          value={counts[item.key]}
-        />
-      ))}
+    <div className="grid grid-cols-2 gap-4 xl:grid-cols-4">
+      {SUMMARY_ITEMS.map((item) => {
+        const Icon = item.icon;
+        return (
+          <KpiCard
+            key={item.key}
+            label={item.label}
+            value={counts[item.key]}
+            accent={item.accent}
+            icon={<Icon className="size-5 stroke-[1.5]" aria-hidden />}
+          />
+        );
+      })}
     </div>
   );
 }

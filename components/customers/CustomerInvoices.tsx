@@ -1,18 +1,10 @@
-import { StatusBadge, type StatusBadgeTone } from "@/components/ui";
-import { formatDate, formatLabel } from "@/lib/format";
-import type { InvoiceDto, InvoiceStatus } from "@/types/invoice";
-import { formatMoney } from "./utils";
+import { StatusBadge } from "@/components/ui";
+import { formatDate, formatLabel, formatMoney } from "@/lib/format";
+import { INVOICE_STATUS_TONE } from "@/lib/status-tone";
+import type { InvoiceDto } from "@/types/invoice";
 
 type CustomerInvoicesProps = {
   invoices: InvoiceDto[];
-};
-
-const STATUS_TONE: Record<InvoiceStatus, StatusBadgeTone> = {
-  draft: "neutral",
-  sent: "info",
-  paid: "success",
-  overdue: "danger",
-  cancelled: "neutral",
 };
 
 export function CustomerInvoices({ invoices }: CustomerInvoicesProps) {
@@ -21,7 +13,7 @@ export function CustomerInvoices({ invoices }: CustomerInvoicesProps) {
   );
 
   return (
-    <section className="h-full">
+    <section className="h-full border border-border bg-surface">
       <div className="border-b border-border px-5 py-4 sm:px-6">
         <h2 className="text-sm font-semibold text-foreground">Invoices</h2>
         <p className="mt-0.5 text-xs text-foreground-muted">Billing history</p>
@@ -50,10 +42,12 @@ export function CustomerInvoices({ invoices }: CustomerInvoicesProps) {
                 </div>
                 <div className="shrink-0 text-right">
                   <p className="text-sm font-medium tabular-nums text-foreground">
-                    {formatMoney(invoice.amountCents, invoice.currency)}
+                    {formatMoney(invoice.amountCents, invoice.currency, {
+                      maximumFractionDigits: 0,
+                    })}
                   </p>
                   <div className="mt-1.5 flex justify-end">
-                    <StatusBadge tone={STATUS_TONE[invoice.status]}>
+                    <StatusBadge tone={INVOICE_STATUS_TONE[invoice.status]}>
                       {formatLabel(invoice.status)}
                     </StatusBadge>
                   </div>

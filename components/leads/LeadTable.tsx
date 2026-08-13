@@ -6,29 +6,13 @@ import {
   DataTable,
   EmptyState,
   StatusBadge,
-  type StatusBadgeTone,
 } from "@/components/ui";
 import { formatDate, formatLabel } from "@/lib/format";
-import type { LeadPriority, LeadStatus } from "@/types/lead";
+import { LEAD_PRIORITY_TONE, LEAD_STATUS_TONE } from "@/lib/status-tone";
 import type { LeadDto } from "./utils";
 
 type LeadTableProps = {
   leads: LeadDto[];
-};
-
-const STATUS_TONE: Record<LeadStatus, StatusBadgeTone> = {
-  new: "pipeline-new",
-  contacted: "pipeline-contacted",
-  qualified: "pipeline-qualified",
-  appointment_scheduled: "pipeline-appointment",
-  converted: "pipeline-converted",
-  lost: "pipeline-lost",
-};
-
-const PRIORITY_TONE: Record<LeadPriority, StatusBadgeTone> = {
-  low: "neutral",
-  medium: "warning",
-  high: "danger",
 };
 
 function Truncate({
@@ -91,7 +75,7 @@ export function LeadTable({ leads }: LeadTableProps) {
           id: "status",
           header: "Status",
           cell: (lead) => (
-            <StatusBadge tone={STATUS_TONE[lead.status]}>
+            <StatusBadge tone={LEAD_STATUS_TONE[lead.status]}>
               {formatLabel(lead.status)}
             </StatusBadge>
           ),
@@ -100,7 +84,7 @@ export function LeadTable({ leads }: LeadTableProps) {
           id: "priority",
           header: "Priority",
           cell: (lead) => (
-            <StatusBadge tone={PRIORITY_TONE[lead.priority]}>
+            <StatusBadge tone={LEAD_PRIORITY_TONE[lead.priority]}>
               {formatLabel(lead.priority)}
             </StatusBadge>
           ),

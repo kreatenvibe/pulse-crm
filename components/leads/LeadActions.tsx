@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Button } from "@/components/ui";
+import { Button, SelectFilter } from "@/components/ui";
 import { formatLabel } from "@/lib/format";
 import type { LeadStatus } from "@/types/lead";
 import { LEAD_STATUSES } from "./utils";
@@ -22,7 +22,7 @@ type LeadActionsProps = {
 };
 
 const inputClassName =
-  "w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground outline-none transition-[border-color,box-shadow] hover:border-border-strong focus:border-brand focus:ring-2 focus:ring-ring/20 disabled:opacity-40";
+  "w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground outline-none transition-[border-color,box-shadow] hover:border-border-strong focus:border-brand focus:ring-2 focus:ring-focus-ring disabled:opacity-40";
 
 function toLocalInputValue(date: Date): string {
   const pad = (value: number) => String(value).padStart(2, "0");
@@ -108,7 +108,7 @@ export function LeadActions({
   }
 
   return (
-    <section className="h-full lg:sticky lg:top-0">
+    <section className="border border-border bg-surface lg:sticky lg:top-6 lg:self-start">
       <div className="border-b border-border px-5 py-4 sm:px-6">
         <h2 className="text-sm font-semibold text-foreground">Actions</h2>
         <p className="mt-0.5 text-xs text-foreground-muted">
@@ -118,26 +118,21 @@ export function LeadActions({
 
       <div className="space-y-6 px-5 py-5 sm:px-6">
         <div className="space-y-2">
-          <label
-            htmlFor="lead-status-action"
-            className="text-sm font-medium text-foreground"
-          >
-            Change status
-          </label>
-          <div className="flex flex-wrap items-center gap-2">
-            <select
+          <p className="text-sm font-medium text-foreground">Change status</p>
+          <div className="flex flex-wrap items-end gap-2">
+            <SelectFilter
               id="lead-status-action"
+              label="Change status"
+              hideLabel
               value={status}
-              onChange={(event) => setStatus(event.target.value as LeadStatus)}
+              options={LEAD_STATUSES.map((item) => ({
+                value: item,
+                label: formatLabel(item),
+              }))}
+              onChange={(value) => setStatus(value as LeadStatus)}
               disabled={actionLoading}
-              className={`${inputClassName} w-auto min-w-34`}
-            >
-              {LEAD_STATUSES.map((item) => (
-                <option key={item} value={item}>
-                  {formatLabel(item)}
-                </option>
-              ))}
-            </select>
+              className="min-w-40 flex-1"
+            />
             <Button
               size="sm"
               variant="primary"

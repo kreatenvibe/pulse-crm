@@ -30,13 +30,13 @@ export function DataTable<T>({
     <div className="overflow-x-auto">
       <table className="w-full min-w-full border-collapse text-left text-sm">
         <thead>
-          <tr className="border-b border-border">
+          <tr className="border-b border-outline-variant bg-surface-container-low">
             {columns.map((column) => (
               <th
                 key={column.id}
                 scope="col"
                 className={[
-                  "px-4 py-3 text-[11px] font-medium tracking-[0.06em] text-foreground-muted uppercase",
+                  "px-4 py-3 eyebrow text-secondary",
                   column.align === "right" ? "text-right" : "text-left",
                   column.className,
                 ]
@@ -48,7 +48,7 @@ export function DataTable<T>({
             ))}
           </tr>
         </thead>
-        <tbody>
+        <tbody className="divide-y divide-outline-variant">
           {data.map((row) => {
             const selected = isRowSelected?.(row) ?? false;
             return (
@@ -57,8 +57,8 @@ export function DataTable<T>({
                 data-selected={selected ? "true" : undefined}
                 className={
                   selected
-                    ? "border-b border-border bg-brand-soft/50"
-                    : "border-b border-border bg-surface transition-colors last:border-b-0 hover:bg-surface-muted/60"
+                    ? "bg-brand-soft"
+                    : "bg-surface-container-lowest transition-colors hover:bg-surface-container-low"
                 }
               >
                 {columns.map((column) => (

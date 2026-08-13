@@ -1,4 +1,4 @@
-import { EmptyState } from "@/components/ui";
+import { DetailSection, EmptyState } from "@/components/ui";
 import { formatLabel } from "@/lib/format";
 
 type BreakdownItem = {
@@ -21,16 +21,11 @@ export function BreakdownSection({
   total,
 }: BreakdownSectionProps) {
   return (
-    <section className="rounded border border-zinc-200">
-      <div className="border-b border-zinc-200 px-4 py-3">
-        <h2 className="text-sm font-semibold">{title}</h2>
-        <p className="text-xs text-zinc-500">{subtitle}</p>
-      </div>
-
+    <DetailSection title={title} subtitle={subtitle}>
       {total === 0 ? (
         <EmptyState message={`No ${title.toLowerCase()} data yet.`} />
       ) : (
-        <ul className="divide-y divide-zinc-200">
+        <ul className="divide-y divide-border">
           {items.map((item) => {
             const percent =
               total > 0 ? Math.round((item.count / total) * 100) : 0;
@@ -38,19 +33,21 @@ export function BreakdownSection({
             return (
               <li
                 key={item.key}
-                className="flex items-center justify-between gap-4 px-4 py-3 text-sm"
+                className="flex items-center justify-between gap-4 px-5 py-3 text-sm sm:px-6"
               >
-                <span>{item.label}</span>
-                <span className="tabular-nums text-zinc-600">
+                <span className="text-foreground">{item.label}</span>
+                <span className="tabular-nums text-foreground-secondary">
                   {item.count}{" "}
-                  <span className="text-xs text-zinc-400">({percent}%)</span>
+                  <span className="text-xs text-foreground-muted">
+                    ({percent}%)
+                  </span>
                 </span>
               </li>
             );
           })}
         </ul>
       )}
-    </section>
+    </DetailSection>
   );
 }
 

@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import {
+  AppointmentCalendar,
   AppointmentFilters,
   AppointmentSchedule,
   buildAppointmentLookups,
@@ -111,6 +112,8 @@ export default function AppointmentsPage() {
         <LoadingState message="Loading appointments…" />
       ) : error ? (
         <ErrorState message={error} />
+      ) : viewMode === "month" ? (
+        <AppointmentCalendar month={month} appointments={filteredAppointments} />
       ) : (
         <div className="flex flex-col gap-4">
           <AppointmentSchedule

@@ -20,21 +20,21 @@ type StatusBadgeProps = {
   className?: string;
 };
 
-/** Outline badges — thin border, no fill (matches reference table status chips). */
+/** Filled tonal badges — Stitch status chips (24px, soft container fills). */
 const TONE_CLASS: Record<StatusBadgeTone, string> = {
-  brand: "border-brand/35 text-brand",
-  success: "border-success/35 text-success",
-  warning: "border-warning/40 text-warning",
-  danger: "border-danger/35 text-danger",
-  info: "border-info/35 text-info",
-  neutral: "border-border-strong text-neutral",
-  "pipeline-new": "border-pipeline-new/40 text-pipeline-new",
-  "pipeline-contacted": "border-pipeline-contacted/40 text-pipeline-contacted",
-  "pipeline-qualified": "border-pipeline-qualified/40 text-pipeline-qualified",
+  brand: "bg-brand-soft text-brand-strong",
+  success: "bg-success-soft text-success",
+  warning: "bg-warning-soft text-warning",
+  danger: "bg-error-container text-on-error-container",
+  info: "bg-tertiary-container text-on-tertiary-container",
+  neutral: "bg-surface-container-high text-on-surface-variant",
+  "pipeline-new": "bg-surface-container-high text-on-surface-variant",
+  "pipeline-contacted": "bg-tertiary-container text-on-tertiary-container",
+  "pipeline-qualified": "bg-brand-soft text-brand-strong",
   "pipeline-appointment":
-    "border-pipeline-appointment/40 text-pipeline-appointment",
-  "pipeline-converted": "border-pipeline-converted/40 text-pipeline-converted",
-  "pipeline-lost": "border-pipeline-lost/40 text-pipeline-lost",
+    "bg-secondary-container text-on-secondary-container border border-outline-variant",
+  "pipeline-converted": "bg-surface-container-highest text-secondary",
+  "pipeline-lost": "bg-error-container text-on-error-container",
 };
 
 export function StatusBadge({
@@ -44,7 +44,7 @@ export function StatusBadge({
 }: StatusBadgeProps) {
   return (
     <span
-      className={`inline-flex max-w-full items-center truncate rounded-md border bg-transparent px-2 py-0.5 text-[11px] font-medium tracking-wide uppercase ${TONE_CLASS[tone]} ${className}`}
+      className={`inline-flex h-6 max-w-full items-center truncate rounded px-2 text-[11px] font-semibold ${TONE_CLASS[tone]} ${className}`}
     >
       {children}
     </span>

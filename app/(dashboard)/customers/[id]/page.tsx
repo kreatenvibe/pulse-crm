@@ -1,18 +1,28 @@
 "use client";
 
 import Link from "next/link";
+import { Building2 } from "lucide-react";
 import { useParams } from "next/navigation";
 import {
-  CustomerAppointments,
   CustomerInvoices,
   CustomerProfile,
   CustomerServices,
   CustomerSummary,
-  CustomerTimeline,
 } from "@/components/customers";
+import { AppointmentsPanel, Timeline } from "@/components/shared";
 import { RelatedTasks } from "@/components/tasks";
-import { Button, EmptyState, ErrorState, LoadingState } from "@/components/ui";
+import {
+  Button,
+  DetailHeader,
+  DetailMeta,
+  EmptyState,
+  ErrorState,
+  LoadingState,
+  StatusBadge,
+} from "@/components/ui";
 import { useCustomerDetails } from "@/hooks";
+import { formatLabel } from "@/lib/format";
+import { CUSTOMER_LIFECYCLE_TONE } from "@/lib/status-tone";
 
 export default function CustomerDetailsPage() {
   const params = useParams<{ id: string }>();
@@ -22,25 +32,47 @@ export default function CustomerDetailsPage() {
 
   return (
     <div className="flex w-full flex-col">
-      <div className="flex flex-wrap items-start justify-between gap-3 border-b border-border px-5 py-5 sm:px-6 lg:px-8">
-        <p className="text-sm text-foreground-muted">
-          <Link
-            href="/customers"
-            className="text-brand hover:text-brand-hover hover:underline"
-          >
-            Customers
-          </Link>
-          <span className="mx-1.5 text-foreground-muted">/</span>
-          <span className="text-foreground-secondary">
-            {data?.customer.primaryContact ?? id}
-          </span>
-        </p>
-        {data ? (
-          <Link href={`/customers/${id}/edit`}>
-            <Button>Edit customer</Button>
-          </Link>
-        ) : null}
-      </div>
+      <DetailHeader
+        backHref="/customers"
+        backLabel="Customers"
+        title={data?.customer.primaryContact ?? id}
+        badges={
+          data ? (
+            <StatusBadge
+              tone={CUSTOMER_LIFECYCLE_TONE[data.customer.lifecycleStatus]}
+            >
+              {formatLabel(data.customer.lifecycleStatus)}
+            </StatusBadge>
+          ) : null
+        }
+        meta={
+          data ? (
+            <>
+              {data.customer.businessName ? (
+                <DetailMeta icon={<Building2 className="size-3.5" aria-hidden />}>
+                  {data.customer.businessName}
+                </DetailMeta>
+              ) : null}
+              <DetailMeta>
+                Source lead:{" "}
+                <Link
+                  href={`/leads/${data.sourceLead.id}`}
+                  className="font-medium text-brand hover:text-brand-hover hover:underline"
+                >
+                  {data.sourceLead.name}
+                </Link>
+              </DetailMeta>
+            </>
+          ) : null
+        }
+        actions={
+          data ? (
+            <Link href={`/customers/${id}/edit`}>
+              <Button variant="primary">Edit customer</Button>
+            </Link>
+          ) : null
+        }
+      />
 
       {loading ? (
         <div className="px-5 py-6 sm:px-6 lg:px-8">
@@ -55,13 +87,7 @@ export default function CustomerDetailsPage() {
           <EmptyState message="Customer not found." />
         </div>
       ) : (
-        <>
-          <CustomerProfile
-            customer={data.customer}
-            assignedUser={data.assignedUser}
-            sourceLead={data.sourceLead}
-          />
-
+        <div className="flex flex-col gap-6 px-5 py-6 sm:px-6 lg:px-8">
           <CustomerSummary
             tasks={data.tasks}
             appointments={data.appointments}
@@ -69,30 +95,27 @@ export default function CustomerDetailsPage() {
             invoices={data.invoices}
           />
 
-          <CustomerTimeline
-            activities={data.activities}
-            notes={data.notes}
+          <CustomerProfile
+            customer={data.customer}
+            assignedUser={data.assignedUser}
           />
 
-          {/* Single 2-col grid: equal-height row cells, no staggered masonry */}
-          <div className="grid lg:grid-cols-2">
-            <div className="border-b border-border lg:border-r">
-              <RelatedTasks
-                tasks={data.tasks}
-                emptyMessage="No tasks for this customer."
-              />
-            </div>
-            <div className="border-b border-border">
-              <CustomerAppointments appointments={data.appointments} />
-            </div>
-            <div className="border-b border-border lg:border-r lg:border-b-0">
-              <CustomerServices services={data.services} />
-            </div>
-            <div className="border-b border-border lg:border-b-0">
-              <CustomerInvoices invoices={data.invoices} />
-            </div>
+          <Timeline activities={data.activities} notes={data.notes} />
+
+          {/* Related records as equal-height floating cards */}
+          <div className="grid gap-6 lg:grid-cols-2">
+            <RelatedTasks
+              tasks={data.tasks}
+              emptyMessage="No tasks for this customer."
+            />
+            <AppointmentsPanel
+              appointments={data.appointments}
+              emptyMessage="No appointments for this customer."
+            />
+            <CustomerServices services={data.services} />
+            <CustomerInvoices invoices={data.invoices} />
           </div>
-        </>
+        </div>
       )}
     </div>
   );

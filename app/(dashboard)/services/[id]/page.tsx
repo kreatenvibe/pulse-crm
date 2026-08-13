@@ -1,25 +1,22 @@
 "use client";
 
 import Link from "next/link";
+import { CalendarDays, UserRound } from "lucide-react";
 import { useParams } from "next/navigation";
 import {
   Button,
+  DetailField,
+  DetailHeader,
+  DetailMeta,
+  DetailSection,
   EmptyState,
   ErrorState,
   LoadingState,
   StatusBadge,
-  type StatusBadgeTone,
 } from "@/components/ui";
 import { useCustomers, useService } from "@/hooks";
 import { formatDate, formatLabel } from "@/lib/format";
-import type { ServiceStatus } from "@/types/service";
-
-const STATUS_TONE: Record<ServiceStatus, StatusBadgeTone> = {
-  planned: "info",
-  in_progress: "brand",
-  completed: "success",
-  cancelled: "neutral",
-};
+import { SERVICE_STATUS_TONE } from "@/lib/status-tone";
 
 export default function ServiceDetailsPage() {
   const params = useParams<{ id: string }>();
@@ -37,30 +34,44 @@ export default function ServiceDetailsPage() {
 
   return (
     <div className="flex w-full flex-col">
-      <div className="flex flex-wrap items-start justify-between gap-3 border-b border-border px-5 py-5 sm:px-6 lg:px-8">
-        <div>
-          <p className="text-sm text-foreground-muted">
-            <Link
-              href="/services"
-              className="text-brand hover:text-brand-hover hover:underline"
-            >
-              Services
+      <DetailHeader
+        backHref="/services"
+        backLabel="Services"
+        title={service?.title ?? id}
+        badges={
+          service ? (
+            <StatusBadge tone={SERVICE_STATUS_TONE[service.status]}>
+              {formatLabel(service.status)}
+            </StatusBadge>
+          ) : null
+        }
+        meta={
+          service ? (
+            <>
+              <DetailMeta icon={<UserRound className="size-3.5" aria-hidden />}>
+                <Link
+                  href={`/customers/${service.customerId}`}
+                  className="font-medium text-brand hover:text-brand-hover hover:underline"
+                >
+                  {customerLabel}
+                </Link>
+              </DetailMeta>
+              <DetailMeta icon={<CalendarDays className="size-3.5" aria-hidden />}>
+                {service.scheduledDate
+                  ? `Scheduled ${formatDate(service.scheduledDate)}`
+                  : "Not scheduled"}
+              </DetailMeta>
+            </>
+          ) : null
+        }
+        actions={
+          service ? (
+            <Link href={`/services/${id}/edit`}>
+              <Button variant="primary">Edit service</Button>
             </Link>
-            <span className="mx-1.5 text-foreground-muted">/</span>
-            <span className="text-foreground-secondary">
-              {service?.title ?? id}
-            </span>
-          </p>
-          <h1 className="mt-1 text-2xl font-semibold tracking-tight text-foreground">
-            {service?.title ?? "Service details"}
-          </h1>
-        </div>
-        {service ? (
-          <Link href={`/services/${id}/edit`}>
-            <Button>Edit service</Button>
-          </Link>
-        ) : null}
-      </div>
+          ) : null
+        }
+      />
 
       {loading ? (
         <div className="px-5 py-6 sm:px-6 lg:px-8">
@@ -76,50 +87,33 @@ export default function ServiceDetailsPage() {
         </div>
       ) : (
         <div className="px-5 py-6 sm:px-6 lg:px-8">
-          <dl className="grid max-w-2xl gap-4 sm:grid-cols-2">
-            <div>
-              <dt className="text-xs font-medium text-foreground-muted">
-                Status
-              </dt>
-              <dd className="mt-1">
-                <StatusBadge tone={STATUS_TONE[service.status]}>
-                  {formatLabel(service.status)}
-                </StatusBadge>
-              </dd>
-            </div>
+          <DetailSection title="Service details" subtitle="Customer and scheduling">
+            <dl className="grid gap-4 px-5 py-6 sm:grid-cols-2 sm:px-6 lg:grid-cols-3">
+            <DetailField label="Customer">
+              <Link
+                href={`/customers/${service.customerId}`}
+                className="text-brand hover:text-brand-hover hover:underline"
+              >
+                {customerLabel}
+              </Link>
+            </DetailField>
+            <DetailField label="Scheduled date">
+              {formatDate(service.scheduledDate)}
+            </DetailField>
+            <DetailField label="Created">
+              {formatDate(service.createdAt)}
+            </DetailField>
+            </dl>
 
-            <div>
-              <dt className="text-xs font-medium text-foreground-muted">
-                Customer
-              </dt>
-              <dd className="mt-1 text-sm text-foreground">
-                <Link
-                  href={`/customers/${service.customerId}`}
-                  className="text-brand hover:text-brand-hover hover:underline"
-                >
-                  {customerLabel}
-                </Link>
-              </dd>
-            </div>
-
-            <div>
-              <dt className="text-xs font-medium text-foreground-muted">
-                Scheduled date
-              </dt>
-              <dd className="mt-1 text-sm text-foreground">
-                {formatDate(service.scheduledDate)}
-              </dd>
-            </div>
-
-            <div className="sm:col-span-2">
-              <dt className="text-xs font-medium text-foreground-muted">
+            <div className="border-t border-border px-5 py-5 sm:px-6">
+              <p className="text-xs font-medium text-foreground-muted">
                 Description
-              </dt>
-              <dd className="mt-1 whitespace-pre-wrap text-sm text-foreground">
+              </p>
+              <p className="mt-1.5 whitespace-pre-wrap text-sm text-foreground">
                 {service.description?.trim() ? service.description : "—"}
-              </dd>
+              </p>
             </div>
-          </dl>
+          </DetailSection>
         </div>
       )}
     </div>

@@ -1,9 +1,14 @@
 "use client";
 
 import Link from "next/link";
+import { CalendarClock, UserRound } from "lucide-react";
 import { useParams } from "next/navigation";
 import {
   Button,
+  DetailField,
+  DetailHeader,
+  DetailMeta,
+  DetailSection,
   EmptyState,
   ErrorState,
   LoadingState,
@@ -11,6 +16,7 @@ import {
 } from "@/components/ui";
 import { useCustomers, useLeads, useTasks, useUsers } from "@/hooks";
 import { formatDate, formatLabel } from "@/lib/format";
+import { TASK_PRIORITY_TONE, TASK_STATUS_TONE } from "@/lib/status-tone";
 
 export default function TaskDetailsPage() {
   const params = useParams<{ id: string }>();
@@ -56,32 +62,55 @@ export default function TaskDetailsPage() {
         })()
       : null;
 
+  const isOverdue =
+    !!task &&
+    task.status !== "done" &&
+    task.status !== "cancelled" &&
+    new Date(task.dueDate).getTime() < Date.now();
+
   return (
     <div className="flex w-full flex-col">
-      <div className="flex flex-wrap items-start justify-between gap-3 border-b border-border px-5 py-5 sm:px-6 lg:px-8">
-        <div>
-          <p className="text-sm text-foreground-muted">
-            <Link
-              href="/tasks"
-              className="text-brand hover:text-brand-hover hover:underline"
-            >
-              Tasks
+      <DetailHeader
+        backHref="/tasks"
+        backLabel="Tasks"
+        title={task?.title ?? id}
+        badges={
+          task ? (
+            <>
+              <StatusBadge tone={TASK_STATUS_TONE[task.status]}>
+                {formatLabel(task.status)}
+              </StatusBadge>
+              <StatusBadge tone={TASK_PRIORITY_TONE[task.priority]}>
+                {formatLabel(task.priority)}
+              </StatusBadge>
+              {isOverdue ? (
+                <StatusBadge tone="danger">Overdue</StatusBadge>
+              ) : null}
+            </>
+          ) : null
+        }
+        meta={
+          task ? (
+            <>
+              <DetailMeta icon={<CalendarClock className="size-3.5" aria-hidden />}>
+                <span className={isOverdue ? "text-danger" : undefined}>
+                  Due {formatDate(task.dueDate)}
+                </span>
+              </DetailMeta>
+              <DetailMeta icon={<UserRound className="size-3.5" aria-hidden />}>
+                {assignedToName}
+              </DetailMeta>
+            </>
+          ) : null
+        }
+        actions={
+          task ? (
+            <Link href={`/tasks/${id}/edit`}>
+              <Button variant="primary">Edit task</Button>
             </Link>
-            <span className="mx-1.5 text-foreground-muted">/</span>
-            <span className="text-foreground-secondary">
-              {task?.title ?? id}
-            </span>
-          </p>
-          <h1 className="mt-1 text-2xl font-semibold tracking-tight text-foreground">
-            {task?.title ?? "Task details"}
-          </h1>
-        </div>
-        {task ? (
-          <Link href={`/tasks/${id}/edit`}>
-            <Button>Edit task</Button>
-          </Link>
-        ) : null}
-      </div>
+          ) : null
+        }
+      />
 
       {loading ? (
         <div className="px-5 py-6 sm:px-6 lg:px-8">
@@ -97,65 +126,39 @@ export default function TaskDetailsPage() {
         </div>
       ) : (
         <div className="px-5 py-6 sm:px-6 lg:px-8">
-          <dl className="grid gap-x-6 gap-y-5 sm:grid-cols-2">
-            <div>
-              <dt className="text-xs font-medium text-foreground-muted">
-                Status
-              </dt>
-              <dd className="mt-1">
-                <StatusBadge>{formatLabel(task.status)}</StatusBadge>
-              </dd>
-            </div>
-            <div>
-              <dt className="text-xs font-medium text-foreground-muted">
-                Priority
-              </dt>
-              <dd className="mt-1">
-                <StatusBadge>{formatLabel(task.priority)}</StatusBadge>
-              </dd>
-            </div>
-            <div>
-              <dt className="text-xs font-medium text-foreground-muted">
-                Due date
-              </dt>
-              <dd className="mt-1 text-sm text-foreground">
+          <DetailSection title="Task details" subtitle="Assignment and scheduling">
+            <dl className="grid gap-4 px-5 py-6 sm:grid-cols-2 sm:px-6 lg:grid-cols-3">
+            <DetailField label="Due date">
+              <span className={isOverdue ? "text-danger" : undefined}>
                 {formatDate(task.dueDate)}
-              </dd>
-            </div>
-            <div>
-              <dt className="text-xs font-medium text-foreground-muted">
-                Assigned to
-              </dt>
-              <dd className="mt-1 text-sm text-foreground">{assignedToName}</dd>
-            </div>
-            <div>
-              <dt className="text-xs font-medium text-foreground-muted">
-                Related
-              </dt>
-              <dd className="mt-1 text-sm text-foreground">
-                {related ? (
-                  <Link
-                    href={related.href}
-                    className="text-brand hover:text-brand-hover hover:underline"
-                  >
-                    {related.label}
-                  </Link>
-                ) : (
-                  "—"
-                )}
-              </dd>
-            </div>
+              </span>
+            </DetailField>
+            <DetailField label="Assigned to">{assignedToName}</DetailField>
+            <DetailField label="Related">
+              {related ? (
+                <Link
+                  href={related.href}
+                  className="text-brand hover:text-brand-hover hover:underline"
+                >
+                  {related.label}
+                </Link>
+              ) : (
+                "—"
+              )}
+            </DetailField>
+          </dl>
+
             {task.description ? (
-              <div className="sm:col-span-2">
-                <dt className="text-xs font-medium text-foreground-muted">
+              <div className="border-t border-border px-5 py-5 sm:px-6">
+                <p className="text-xs font-medium text-foreground-muted">
                   Description
-                </dt>
-                <dd className="mt-1 whitespace-pre-wrap text-sm text-foreground">
+                </p>
+                <p className="mt-1.5 whitespace-pre-wrap text-sm text-foreground">
                   {task.description}
-                </dd>
+                </p>
               </div>
             ) : null}
-          </dl>
+          </DetailSection>
         </div>
       )}
     </div>

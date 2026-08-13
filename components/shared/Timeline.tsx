@@ -13,7 +13,7 @@ import { formatDateTime, formatLabel } from "@/lib/format";
 import type { ActivityDto, ActivityType } from "@/types/activity";
 import type { NoteDto } from "@/types/note";
 
-type CustomerTimelineProps = {
+type TimelineProps = {
   activities: ActivityDto[];
   notes: NoteDto[];
 };
@@ -60,10 +60,11 @@ const ACTIVITY_STYLE: Record<
   },
 };
 
-export function CustomerTimeline({
-  activities,
-  notes,
-}: CustomerTimelineProps) {
+/**
+ * Merged activity + note feed, shared by lead and customer detail pages.
+ * Activities and notes are interleaved and sorted newest-first.
+ */
+export function Timeline({ activities, notes }: TimelineProps) {
   const items: TimelineItem[] = [
     ...activities.map((activity) => ({
       kind: "activity" as const,
@@ -80,8 +81,8 @@ export function CustomerTimeline({
   ].sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime());
 
   return (
-    <section className="border-b border-border">
-      <div className="border-b border-border px-5 py-4 sm:px-6 lg:px-8">
+    <section className="border border-border bg-surface">
+      <div className="border-b border-border px-5 py-4 sm:px-6">
         <h2 className="text-sm font-semibold text-foreground">Timeline</h2>
         <p className="mt-0.5 text-xs text-foreground-muted">
           Activities and notes
@@ -89,7 +90,7 @@ export function CustomerTimeline({
       </div>
 
       {items.length === 0 ? (
-        <div className="px-5 py-10 text-center text-sm text-foreground-muted sm:px-6 lg:px-8">
+        <div className="px-5 py-10 text-center text-sm text-foreground-muted sm:px-6">
           No timeline events yet.
         </div>
       ) : (
@@ -102,7 +103,7 @@ export function CustomerTimeline({
               return (
                 <li
                   key={item.id}
-                  className="flex items-start gap-3 border-b border-border px-5 py-3.5 last:border-b-0 sm:px-6 lg:px-8"
+                  className="flex items-start gap-3 border-b border-border px-5 py-3.5 last:border-b-0 sm:px-6"
                 >
                   <span
                     className={`mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-md bg-surface-muted ${style.iconColor}`}
@@ -126,7 +127,7 @@ export function CustomerTimeline({
             return (
               <li
                 key={item.id}
-                className="flex items-start gap-3 border-b border-border px-5 py-3.5 last:border-b-0 sm:px-6 lg:px-8"
+                className="flex items-start gap-3 border-b border-border px-5 py-3.5 last:border-b-0 sm:px-6"
               >
                 <span className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-md bg-surface-muted text-neutral">
                   <NotebookPen className="size-4 stroke-[1.5]" aria-hidden />

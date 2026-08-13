@@ -102,29 +102,72 @@ export function filterAppointments(
   );
 }
 
-export function groupAppointmentsByDate(
-  appointments: EnrichedAppointment[],
-): { dateKey: string; dateLabel: string; items: EnrichedAppointment[] }[] {
-  const groups = new Map<string, EnrichedAppointment[]>();
+export type CalendarDay = {
+  date: Date;
+  key: string;
+  dayNumber: number;
+  inCurrentMonth: boolean;
+  isToday: boolean;
+  appointments: EnrichedAppointment[];
+};
 
+/** Local (not UTC) YYYY-MM-DD key so appointments land on the day the user sees. */
+function toLocalDateKey(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+/**
+ * Build the weeks for a month calendar grid. The grid always starts on the
+ * Sunday on/before the 1st and ends on the Saturday on/after the last day, so
+ * leading/trailing days from adjacent months fill out complete weeks.
+ * Appointments are expected pre-sorted by start (see filterAppointments).
+ */
+export function buildCalendarWeeks(
+  month: Date,
+  appointments: EnrichedAppointment[],
+  today: Date = new Date(),
+): CalendarDay[][] {
+  const byDay = new Map<string, EnrichedAppointment[]>();
   for (const appointment of appointments) {
-    const start = new Date(appointment.start);
-    const dateKey = start.toISOString().slice(0, 10);
-    const existing = groups.get(dateKey) ?? [];
+    const key = toLocalDateKey(new Date(appointment.start));
+    const existing = byDay.get(key) ?? [];
     existing.push(appointment);
-    groups.set(dateKey, existing);
+    byDay.set(key, existing);
   }
 
-  return Array.from(groups.entries()).map(([dateKey, items]) => {
-    const date = new Date(`${dateKey}T12:00:00`);
-    const dateLabel = date.toLocaleDateString("en-IN", {
-      weekday: "long",
-      day: "numeric",
-      month: "long",
-      year: "numeric",
-    });
-    return { dateKey, dateLabel, items };
-  });
+  const firstOfMonth = new Date(month.getFullYear(), month.getMonth(), 1);
+  const gridStart = new Date(firstOfMonth);
+  gridStart.setDate(1 - firstOfMonth.getDay());
+
+  const lastOfMonth = new Date(month.getFullYear(), month.getMonth() + 1, 0);
+  const gridEnd = new Date(lastOfMonth);
+  gridEnd.setDate(lastOfMonth.getDate() + (6 - lastOfMonth.getDay()));
+
+  const todayKey = toLocalDateKey(today);
+  const weeks: CalendarDay[][] = [];
+  const cursor = new Date(gridStart);
+
+  while (cursor <= gridEnd) {
+    const week: CalendarDay[] = [];
+    for (let i = 0; i < 7; i++) {
+      const key = toLocalDateKey(cursor);
+      week.push({
+        date: new Date(cursor),
+        key,
+        dayNumber: cursor.getDate(),
+        inCurrentMonth: cursor.getMonth() === month.getMonth(),
+        isToday: key === todayKey,
+        appointments: byDay.get(key) ?? [],
+      });
+      cursor.setDate(cursor.getDate() + 1);
+    }
+    weeks.push(week);
+  }
+
+  return weeks;
 }
 
 export function formatMonthLabel(month: Date): string {

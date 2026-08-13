@@ -9,6 +9,7 @@ import {
   FormCombobox,
   FormField,
   FormInput,
+  FormSegmented,
   FormSelect,
   FormTextarea,
 } from "@/components/ui";
@@ -163,8 +164,8 @@ export function AppointmentForm({
   };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
-      <div className="grid gap-4 sm:grid-cols-2">
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+      <div className="grid gap-x-4 gap-y-4 sm:grid-cols-2">
         <FormField label="Title" required error={errors.title?.message}>
           <FormInput {...register("title")} placeholder="Product demo" />
         </FormField>
@@ -200,35 +201,16 @@ export function AppointmentForm({
         </FormField>
 
         <div className="sm:col-span-2">
-          <fieldset>
-            <legend className="mb-1 text-sm font-medium text-foreground">
-              Link appointment to
-            </legend>
-            {/* Segmented control: real radios kept for a11y (sr-only) with
-                styled labels driving the visible active state. */}
-            <div className="grid grid-cols-2 gap-1 rounded-lg border border-border bg-surface-muted p-1">
-              {(["lead", "customer"] as const).map((option) => (
-                <label
-                  key={option}
-                  className={`flex cursor-pointer items-center justify-center rounded-md px-3 py-1.5 text-sm font-medium transition-colors has-focus-visible:ring-2 has-focus-visible:ring-ring/40 ${
-                    linkType === option
-                      ? "border border-brand bg-brand-soft text-brand"
-                      : "border border-transparent text-foreground-muted hover:text-foreground"
-                  }`}
-                >
-                  <input
-                    type="radio"
-                    name="appointmentLink"
-                    value={option}
-                    checked={linkType === option}
-                    onChange={() => setLinkType(option)}
-                    className="sr-only"
-                  />
-                  {option === "lead" ? "Lead" : "Customer"}
-                </label>
-              ))}
-            </div>
-          </fieldset>
+          <FormSegmented
+            label="Link appointment to"
+            name="appointmentLink"
+            value={linkType}
+            onChange={setLinkType}
+            options={[
+              { value: "lead", label: "Lead" },
+              { value: "customer", label: "Customer" },
+            ]}
+          />
 
           <div className="mt-2">
             {linkType === "lead" ? (

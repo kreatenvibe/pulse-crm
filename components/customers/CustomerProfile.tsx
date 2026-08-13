@@ -1,28 +1,12 @@
-import Link from "next/link";
-import { Building2, Mail, MapPin, Phone, UserRound } from "lucide-react";
+import { Mail, MapPin, Phone, UserRound } from "lucide-react";
 import type { ReactNode } from "react";
-import { StatusBadge, type StatusBadgeTone } from "@/components/ui";
-import { formatLabel } from "@/lib/format";
-import type {
-  CustomerDto,
-  CustomerLifecycleStatus,
-} from "@/types/customer";
-import type {
-  CustomerAssignee,
-  CustomerSourceLead,
-} from "@/types/customer-details";
+import { DetailSection } from "@/components/ui";
+import type { CustomerDto } from "@/types/customer";
+import type { CustomerAssignee } from "@/types/customer-details";
 
 type CustomerProfileProps = {
   customer: CustomerDto;
   assignedUser: CustomerAssignee;
-  sourceLead: CustomerSourceLead;
-};
-
-const LIFECYCLE_TONE: Record<CustomerLifecycleStatus, StatusBadgeTone> = {
-  onboarding: "info",
-  active: "success",
-  inactive: "neutral",
-  churned: "danger",
 };
 
 function MetaItem({
@@ -50,50 +34,14 @@ function MetaItem({
 export function CustomerProfile({
   customer,
   assignedUser,
-  sourceLead,
 }: CustomerProfileProps) {
   return (
-    <section className="border-b border-border px-5 py-6 sm:px-6 lg:px-8">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div className="min-w-0">
-          <div className="flex flex-wrap items-center gap-2.5">
-            <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-              {customer.primaryContact}
-            </h1>
-            <StatusBadge tone={LIFECYCLE_TONE[customer.lifecycleStatus]}>
-              {formatLabel(customer.lifecycleStatus)}
-            </StatusBadge>
-          </div>
-          {customer.businessName ? (
-            <p className="mt-1 flex items-center gap-1.5 text-sm text-foreground-secondary">
-              <Building2 className="size-3.5 shrink-0" aria-hidden />
-              {customer.businessName}
-            </p>
-          ) : null}
-        </div>
-
-        <p className="text-sm text-foreground-secondary">
-          Source lead:{" "}
-          <Link
-            href={`/leads/${sourceLead.id}`}
-            className="font-medium text-brand hover:text-brand-hover hover:underline"
-          >
-            {sourceLead.name}
-          </Link>
-        </p>
-      </div>
-
-      <div className="mt-5 grid gap-4 border-t border-border pt-5 sm:grid-cols-2 lg:grid-cols-4">
-        <MetaItem
-          icon={<Phone className="size-4" aria-hidden />}
-          label="Phone"
-        >
+    <DetailSection title="Contact" subtitle="Primary contact details">
+      <div className="grid gap-4 px-5 py-6 sm:grid-cols-2 sm:px-6 lg:grid-cols-4">
+        <MetaItem icon={<Phone className="size-4" aria-hidden />} label="Phone">
           <span className="tabular-nums">{customer.phone}</span>
         </MetaItem>
-        <MetaItem
-          icon={<Mail className="size-4" aria-hidden />}
-          label="Email"
-        >
+        <MetaItem icon={<Mail className="size-4" aria-hidden />} label="Email">
           {customer.email ?? "—"}
         </MetaItem>
         <MetaItem
@@ -109,6 +57,6 @@ export function CustomerProfile({
           {assignedUser.name}
         </MetaItem>
       </div>
-    </section>
+    </DetailSection>
   );
 }

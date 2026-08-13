@@ -1,16 +1,10 @@
-import { StatusBadge, type StatusBadgeTone } from "@/components/ui";
+import { StatusBadge } from "@/components/ui";
 import { formatDate, formatLabel } from "@/lib/format";
-import type { ServiceDto, ServiceStatus } from "@/types/service";
+import { SERVICE_STATUS_TONE } from "@/lib/status-tone";
+import type { ServiceDto } from "@/types/service";
 
 type CustomerServicesProps = {
   services: ServiceDto[];
-};
-
-const STATUS_TONE: Record<ServiceStatus, StatusBadgeTone> = {
-  planned: "info",
-  in_progress: "brand",
-  completed: "success",
-  cancelled: "neutral",
 };
 
 export function CustomerServices({ services }: CustomerServicesProps) {
@@ -25,7 +19,7 @@ export function CustomerServices({ services }: CustomerServicesProps) {
   });
 
   return (
-    <section className="h-full">
+    <section className="h-full border border-border bg-surface">
       <div className="border-b border-border px-5 py-4 sm:px-6">
         <h2 className="text-sm font-semibold text-foreground">Services</h2>
         <p className="mt-0.5 text-xs text-foreground-muted">
@@ -55,7 +49,7 @@ export function CustomerServices({ services }: CustomerServicesProps) {
                     </p>
                   ) : null}
                 </div>
-                <StatusBadge tone={STATUS_TONE[service.status]}>
+                <StatusBadge tone={SERVICE_STATUS_TONE[service.status]}>
                   {formatLabel(service.status)}
                 </StatusBadge>
               </div>

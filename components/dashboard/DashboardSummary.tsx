@@ -1,11 +1,13 @@
 import {
   CalendarDays,
   FileWarning,
+  Minus,
+  TrendingUp,
   UserRound,
   Users,
 } from "lucide-react";
 import type { DashboardSummaryDto } from "@/types/dashboard";
-import { StatCard } from "./StatCard";
+import { KpiCard } from "./KpiCard";
 
 type DashboardSummaryProps = {
   summary: DashboardSummaryDto;
@@ -15,33 +17,29 @@ export function DashboardSummary({ summary }: DashboardSummaryProps) {
   const newLeads = summary.leads.byStatus.new ?? 0;
 
   return (
-    <div className="grid gap-6 py-6 sm:grid-cols-2 xl:grid-cols-4 xl:gap-0 xl:divide-x xl:divide-border">
-      <StatCard
-        className="xl:pr-8"
+    <div className="grid grid-cols-2 gap-4 xl:grid-cols-4">
+      <KpiCard
         label="Total leads"
         value={summary.leads.total}
         hint={newLeads > 0 ? `${newLeads} new in pipeline` : "No new leads"}
-        tone="brand"
+        hintIcon={<TrendingUp className="size-3.5" aria-hidden />}
         icon={<UserRound className="size-5 stroke-[1.5]" aria-hidden />}
       />
-      <StatCard
-        className="xl:px-8"
+      <KpiCard
         label="Active customers"
         value={summary.customers.active}
         hint={`${summary.customers.total} total customers`}
-        tone="success"
+        hintIcon={<Minus className="size-3.5" aria-hidden />}
         icon={<Users className="size-5 stroke-[1.5]" aria-hidden />}
       />
-      <StatCard
-        className="xl:px-8"
-        label="Upcoming appointments"
+      <KpiCard
+        label="Appointments"
         value={summary.appointments.upcoming}
         hint={`${summary.appointments.total} total appointments`}
-        tone="danger"
         icon={<CalendarDays className="size-5 stroke-[1.5]" aria-hidden />}
+        accent
       />
-      <StatCard
-        className="xl:pl-8"
+      <KpiCard
         label="Unpaid invoices"
         value={summary.invoices.unpaid}
         hint={
@@ -49,7 +47,11 @@ export function DashboardSummary({ summary }: DashboardSummaryProps) {
             ? `${summary.invoices.overdue} overdue`
             : `${summary.invoices.total} total invoices`
         }
-        tone="warning"
+        hintIcon={
+          summary.invoices.overdue > 0 ? (
+            <FileWarning className="size-3.5" aria-hidden />
+          ) : undefined
+        }
         icon={<FileWarning className="size-5 stroke-[1.5]" aria-hidden />}
       />
     </div>
