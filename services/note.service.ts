@@ -10,11 +10,8 @@ import {
   type UpdateNoteInput,
 } from "@/lib/schemas/note.schema";
 import { nextId, now } from "./helpers";
-import {
-  assertEntityReference,
-  assertUserId,
-  parseInput,
-} from "./validation";
+import { parseInput } from "./parse";
+import { assertEntityReference, assertUserId } from "./validation";
 
 export type { CreateNoteInput, UpdateNoteInput };
 

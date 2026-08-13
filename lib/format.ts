@@ -1,8 +1,24 @@
+import type { CustomerDto } from "@/types/customer";
+
 export function formatLabel(value: string): string {
   return value
     .split("_")
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join(" ");
+}
+
+/**
+ * Full customer display name for lists, detail links, and picker labels:
+ * "Business — Contact" when a business name exists, otherwise the contact
+ * alone. Distinct from the compact business-or-contact label used for enriched
+ * related-record labels (see `enrichTask` / `enrichAppointment`).
+ */
+export function formatCustomerName(
+  customer: Pick<CustomerDto, "businessName" | "primaryContact">,
+): string {
+  return customer.businessName
+    ? `${customer.businessName} — ${customer.primaryContact}`
+    : customer.primaryContact;
 }
 
 /**

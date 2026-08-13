@@ -11,7 +11,9 @@ import {
 import {
   Button,
   ErrorState,
+  FilterBar,
   LoadingState,
+  PageHeader,
   Pagination,
 } from "@/components/ui";
 import { useCustomers } from "@/hooks";
@@ -52,23 +54,17 @@ export default function CustomersPage() {
 
   return (
     <div className="flex w-full flex-col">
-      <div className="border-b border-border px-5 py-6 sm:px-6 lg:px-8">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-              Customers
-            </h1>
-            <p className="mt-1 text-sm text-foreground-muted">
-              Search, filter, and review converted customers.
-            </p>
-          </div>
+      <PageHeader
+        title="Customers"
+        description="Search, filter, and review converted customers."
+        actions={
           <Link href="/customers/new">
             <Button variant="primary">New customer</Button>
           </Link>
-        </div>
-      </div>
+        }
+      />
 
-      <div className="border-b border-border px-5 py-4 sm:px-6 lg:px-8">
+      <FilterBar>
         <CustomerFilters
           search={search}
           lifecycleStatus={lifecycleStatus}
@@ -77,7 +73,7 @@ export default function CustomersPage() {
           onLifecycleStatusChange={setLifecycleStatus}
           onSortChange={setSort}
         />
-      </div>
+      </FilterBar>
 
       {loading ? (
         <div className="px-5 py-6 sm:px-6 lg:px-8">

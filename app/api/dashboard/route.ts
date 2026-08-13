@@ -1,6 +1,7 @@
+import { ok, withApiErrors } from "@/lib/api-route";
 import { dashboardService } from "@/services";
 
-export async function GET() {
+export const GET = withApiErrors(async () => {
   const summary = await dashboardService.getSummary();
-  return Response.json(summary);
-}
+  return ok(summary);
+});

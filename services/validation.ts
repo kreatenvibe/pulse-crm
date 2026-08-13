@@ -1,33 +1,13 @@
-import type { ZodType } from "zod";
 import { prisma } from "@/lib/prisma";
 import type { EntityType, ID } from "@/types/common";
 import { ServiceError } from "./errors";
 
 /**
- * Pure input validation (required/optional strings, enums, dates, numbers,
- * tags, create/update shapes) now lives in `lib/schemas/*` as Zod schemas.
- * `parseInput` bridges a Zod validation failure to the existing `ServiceError`
- * contract so the API keeps returning `VALIDATION` (HTTP 400).
- *
- * Everything else in this file is DB-backed / business validation that must
- * query PostgreSQL, so it stays in the service layer.
+ * DB-backed / business validation for the service layer. Pure input parsing
+ * (required/optional strings, enums, dates, numbers, tags, create/update
+ * shapes) lives in `lib/schemas/*` as Zod schemas and `./parse`; everything in
+ * this file must query PostgreSQL, so it stays here.
  */
-
-/** Parse raw input against a Zod schema, throwing `ServiceError("VALIDATION")`. */
-export function parseInput<T>(schema: ZodType<T>, data: unknown): T {
-  const result = schema.safeParse(data);
-  if (!result.success) {
-    const issue = result.error.issues[0];
-    const path = issue?.path.join(".");
-    const message = issue
-      ? path
-        ? `${path}: ${issue.message}`
-        : issue.message
-      : "Invalid input";
-    throw new ServiceError(message, "VALIDATION");
-  }
-  return result.data;
-}
 
 /** Trim + require a string id before hitting the database. */
 function requiredId(value: unknown, field: string): ID {

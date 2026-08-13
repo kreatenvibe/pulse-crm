@@ -15,7 +15,7 @@ import {
   StatusBadge,
 } from "@/components/ui";
 import { useCustomers, useLeads, useTasks, useUsers } from "@/hooks";
-import { formatDate, formatLabel } from "@/lib/format";
+import { formatCustomerName, formatDate, formatLabel } from "@/lib/format";
 import { TASK_PRIORITY_TONE, TASK_STATUS_TONE } from "@/lib/status-tone";
 
 export default function TaskDetailsPage() {
@@ -51,9 +51,7 @@ export default function TaskDetailsPage() {
       ? (() => {
           const customer = customers.find((item) => item.id === task.customerId);
           const name = customer
-            ? customer.businessName
-              ? `${customer.businessName} — ${customer.primaryContact}`
-              : customer.primaryContact
+            ? formatCustomerName(customer)
             : task.customerId;
           return {
             label: `Customer: ${name}`,

@@ -9,6 +9,7 @@ import {
   UserRoundPlus,
   type LucideIcon,
 } from "lucide-react";
+import { DetailSection } from "@/components/ui";
 import { formatDateTime, formatLabel } from "@/lib/format";
 import type { ActivityDto, ActivityType } from "@/types/activity";
 import type { NoteDto } from "@/types/note";
@@ -81,14 +82,7 @@ export function Timeline({ activities, notes }: TimelineProps) {
   ].sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime());
 
   return (
-    <section className="border border-border bg-surface">
-      <div className="border-b border-border px-5 py-4 sm:px-6">
-        <h2 className="text-sm font-semibold text-foreground">Timeline</h2>
-        <p className="mt-0.5 text-xs text-foreground-muted">
-          Activities and notes
-        </p>
-      </div>
-
+    <DetailSection title="Timeline" subtitle="Activities and notes">
       {items.length === 0 ? (
         <div className="px-5 py-10 text-center text-sm text-foreground-muted sm:px-6">
           No timeline events yet.
@@ -146,6 +140,6 @@ export function Timeline({ activities, notes }: TimelineProps) {
           })}
         </ul>
       )}
-    </section>
+    </DetailSection>
   );
 }

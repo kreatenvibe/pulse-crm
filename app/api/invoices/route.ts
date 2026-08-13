@@ -1,17 +1,13 @@
-import { serviceErrorResponse } from "@/lib/api-route";
+import { created, ok, readJson, withApiErrors } from "@/lib/api-route";
 import { invoiceService } from "@/services";
 
-export async function GET() {
+export const GET = withApiErrors(async () => {
   const invoices = await invoiceService.getAll();
-  return Response.json(invoices);
-}
+  return ok(invoices);
+});
 
-export async function POST(request: Request) {
-  try {
-    const body = await request.json();
-    const invoice = await invoiceService.create(body);
-    return Response.json(invoice, { status: 201 });
-  } catch (error) {
-    return serviceErrorResponse(error);
-  }
-}
+export const POST = withApiErrors(async (request: Request) => {
+  const body = await readJson(request);
+  const invoice = await invoiceService.create(body);
+  return created(invoice);
+});

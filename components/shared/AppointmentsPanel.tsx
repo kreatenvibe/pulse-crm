@@ -1,4 +1,4 @@
-import { StatusBadge } from "@/components/ui";
+import { DetailSection, StatusBadge } from "@/components/ui";
 import { formatDateTime, formatLabel } from "@/lib/format";
 import { APPOINTMENT_STATUS_TONE } from "@/lib/status-tone";
 import type { AppointmentDto } from "@/types/appointment";
@@ -76,14 +76,11 @@ export function AppointmentsPanel({
     );
 
   return (
-    <section className="h-full border border-border bg-surface">
-      <div className="border-b border-border px-5 py-4 sm:px-6">
-        <h2 className="text-sm font-semibold text-foreground">Appointments</h2>
-        <p className="mt-0.5 text-xs text-foreground-muted">
-          Upcoming and past
-        </p>
-      </div>
-
+    <DetailSection
+      title="Appointments"
+      subtitle="Upcoming and past"
+      className="h-full"
+    >
       {appointments.length === 0 ? (
         <div className="px-5 py-10 text-center text-sm text-foreground-muted sm:px-6">
           {emptyMessage}
@@ -102,6 +99,6 @@ export function AppointmentsPanel({
           />
         </div>
       )}
-    </section>
+    </DetailSection>
   );
 }

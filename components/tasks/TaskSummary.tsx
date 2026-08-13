@@ -5,7 +5,7 @@ import {
   ClipboardList,
   type LucideIcon,
 } from "lucide-react";
-import { KpiCard } from "@/components/dashboard";
+import { KpiCard } from "@/components/ui";
 import type { TaskViewMode } from "./utils";
 
 type TaskSummaryProps = {

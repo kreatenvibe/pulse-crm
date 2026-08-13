@@ -8,7 +8,7 @@ import {
   TaskCompletionReport,
   breakdownFromRecord,
 } from "@/components/reports";
-import { ErrorState, LoadingState } from "@/components/ui";
+import { ErrorState, LoadingState, PageHeader } from "@/components/ui";
 import { useReports } from "@/hooks";
 import type { AppointmentStatus } from "@/types/appointment";
 import type { LeadSource } from "@/types/lead";
@@ -36,22 +36,19 @@ export default function ReportsPage() {
   const { data, loading, error } = useReports();
 
   return (
-    <div className="flex w-full flex-col gap-6 px-5 py-6 sm:px-6 lg:px-8">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-          Reports
-        </h1>
-        <p className="mt-1 text-sm text-foreground-secondary">
-          Pipeline, activity, and revenue metrics derived from your CRM data.
-        </p>
-      </div>
+    <div className="flex w-full flex-col">
+      <PageHeader
+        title="Reports"
+        description="Pipeline, activity, and revenue metrics derived from your CRM data."
+      />
 
-      {loading ? (
-        <LoadingState message="Loading reports…" />
-      ) : error ? (
-        <ErrorState message={error} />
-      ) : (
-        <>
+      <div className="flex flex-col gap-6 px-5 py-6 sm:px-6 lg:px-8">
+        {loading ? (
+          <LoadingState message="Loading reports…" />
+        ) : error ? (
+          <ErrorState message={error} />
+        ) : (
+          <>
           <ConversionReport
             total={data.leads.total}
             converted={data.leads.converted}
@@ -98,8 +95,9 @@ export default function ReportsPage() {
             outstandingAmountCents={data.invoices.outstandingAmountCents}
             totalBilledCents={data.invoices.totalBilledCents}
           />
-        </>
-      )}
+          </>
+        )}
+      </div>
     </div>
   );
 }

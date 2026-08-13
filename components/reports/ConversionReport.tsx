@@ -1,5 +1,5 @@
 import { Percent, TrendingUp, UserRound } from "lucide-react";
-import { KpiCard } from "@/components/dashboard";
+import { KpiCard } from "@/components/ui";
 
 type ConversionReportProps = {
   total: number;

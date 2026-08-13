@@ -16,7 +16,9 @@ import {
 import {
   Button,
   ErrorState,
+  FilterBar,
   LoadingState,
+  PageHeader,
   Pagination,
 } from "@/components/ui";
 import { useCustomers, useLeads, useTasks } from "@/hooks";
@@ -70,44 +72,52 @@ export default function TasksPage() {
   }
 
   return (
-    <div className="flex w-full flex-col gap-6 px-5 py-6 sm:px-6 lg:px-8">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-            Tasks
-          </h1>
-          <p className="mt-1 text-sm text-foreground-secondary">
-            Track follow-ups and to-dos across leads and customers.
-          </p>
-        </div>
-        <Link href="/tasks/new">
-          <Button variant="primary">New task</Button>
-        </Link>
-      </div>
+    <div className="flex w-full flex-col">
+      <PageHeader
+        title="Tasks"
+        description="Track follow-ups and to-dos across leads and customers."
+        actions={
+          <Link href="/tasks/new">
+            <Button variant="primary">New task</Button>
+          </Link>
+        }
+      />
 
       {loading ? (
-        <LoadingState message="Loading tasks…" />
+        <div className="px-5 py-6 sm:px-6 lg:px-8">
+          <LoadingState message="Loading tasks…" />
+        </div>
       ) : error ? (
-        <ErrorState message={error} />
+        <div className="px-5 py-6 sm:px-6 lg:px-8">
+          <ErrorState message={error} />
+        </div>
       ) : (
         <>
-          <TaskSummary counts={counts} />
+          <div className="border-b border-border px-5 py-6 sm:px-6 lg:px-8">
+            <TaskSummary counts={counts} />
+          </div>
 
-          <TaskFilters
-            viewMode={viewMode}
-            status={status}
-            priority={priority}
-            onViewModeChange={setViewMode}
-            onStatusChange={setStatus}
-            onPriorityChange={setPriority}
-          />
-
-          <div className="flex flex-col gap-4">
-            <TaskTable
-              tasks={pageTasks}
-              emptyMessage={emptyMessageForView(viewMode)}
+          <FilterBar>
+            <TaskFilters
+              viewMode={viewMode}
+              status={status}
+              priority={priority}
+              onViewModeChange={setViewMode}
+              onStatusChange={setStatus}
+              onPriorityChange={setPriority}
             />
-            <Pagination pagination={pagination} onPageChange={setPage} />
+          </FilterBar>
+
+          <div className="flex flex-col">
+            <div className="px-5 sm:px-6 lg:px-8">
+              <TaskTable
+                tasks={pageTasks}
+                emptyMessage={emptyMessageForView(viewMode)}
+              />
+            </div>
+            <div className="border-t border-border px-5 py-4 sm:px-6 lg:px-8">
+              <Pagination pagination={pagination} onPageChange={setPage} />
+            </div>
           </div>
         </>
       )}

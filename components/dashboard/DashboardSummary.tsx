@@ -7,7 +7,7 @@ import {
   Users,
 } from "lucide-react";
 import type { DashboardSummaryDto } from "@/types/dashboard";
-import { KpiCard } from "./KpiCard";
+import { KpiCard } from "@/components/ui";
 
 type DashboardSummaryProps = {
   summary: DashboardSummaryDto;

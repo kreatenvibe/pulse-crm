@@ -10,7 +10,8 @@ import {
   type UpdateServiceInput,
 } from "@/lib/schemas/service.schema";
 import { nextId, now } from "./helpers";
-import { assertCustomerId, parseInput } from "./validation";
+import { parseInput } from "./parse";
+import { assertCustomerId } from "./validation";
 
 export type { CreateServiceInput, UpdateServiceInput };
 

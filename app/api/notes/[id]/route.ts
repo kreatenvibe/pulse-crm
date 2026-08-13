@@ -1,45 +1,38 @@
-import { serviceErrorResponse } from "@/lib/api-route";
+import {
+  assertFound,
+  noContent,
+  ok,
+  readJson,
+  withApiErrors,
+} from "@/lib/api-route";
 import { noteService } from "@/services";
 
 type Params = Promise<{ id: string }>;
 
-export async function GET(
-  _request: Request,
-  { params }: { params: Params },
-) {
-  const { id } = await params;
-  const note = await noteService.getById(id);
-  if (!note) {
-    return Response.json({ error: "Not Found" }, { status: 404 });
-  }
-  return Response.json(note);
-}
+export const GET = withApiErrors(
+  async (_request: Request, { params }: { params: Params }) => {
+    const { id } = await params;
+    const note = assertFound(await noteService.getById(id), "Note not found");
+    return ok(note);
+  },
+);
 
-export async function PATCH(
-  request: Request,
-  { params }: { params: Params },
-) {
-  const { id } = await params;
-  try {
-    const body = await request.json();
-    const note = await noteService.update(id, body);
-    if (!note) {
-      return Response.json({ error: "Not Found" }, { status: 404 });
-    }
-    return Response.json(note);
-  } catch (error) {
-    return serviceErrorResponse(error);
-  }
-}
+export const PATCH = withApiErrors(
+  async (request: Request, { params }: { params: Params }) => {
+    const { id } = await params;
+    const body = await readJson(request);
+    const note = assertFound(
+      await noteService.update(id, body),
+      "Note not found",
+    );
+    return ok(note);
+  },
+);
 
-export async function DELETE(
-  _request: Request,
-  { params }: { params: Params },
-) {
-  const { id } = await params;
-  const deleted = await noteService.delete(id);
-  if (!deleted) {
-    return Response.json({ error: "Not Found" }, { status: 404 });
-  }
-  return new Response(null, { status: 204 });
-}
+export const DELETE = withApiErrors(
+  async (_request: Request, { params }: { params: Params }) => {
+    const { id } = await params;
+    assertFound(await noteService.delete(id), "Note not found");
+    return noContent();
+  },
+);

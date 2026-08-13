@@ -1,5 +1,5 @@
 import { Banknote, Wallet } from "lucide-react";
-import { KpiCard } from "@/components/dashboard";
+import { KpiCard } from "@/components/ui";
 import type { InvoiceStatus } from "@/types/invoice";
 import { formatMoney } from "@/lib/format";
 import { BreakdownSection, breakdownFromRecord } from "./BreakdownSection";

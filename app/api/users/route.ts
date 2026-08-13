@@ -1,7 +1,8 @@
+import { ok, withApiErrors } from "@/lib/api-route";
 import { userService } from "@/services";
 
-export async function GET() {
+export const GET = withApiErrors(async () => {
   // Full collection for assignment pickers (assignedTo comboboxes).
   const users = await userService.getAll();
-  return Response.json(users);
-}
+  return ok(users);
+});

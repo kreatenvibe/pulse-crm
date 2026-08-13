@@ -28,57 +28,53 @@ export function AppointmentFilters({
   onMonthChange,
 }: AppointmentFiltersProps) {
   return (
-    <div className="border-b border-border pb-4">
-      <div className="flex flex-col gap-3">
-        <div className="flex flex-wrap items-end gap-3">
-          <SelectFilter
-            id="appointment-view"
-            label="View"
-            value={viewMode}
-            options={[
-              { value: "upcoming", label: "Upcoming" },
-              { value: "month", label: "By month" },
-            ]}
-            onChange={(value) => onViewModeChange(value as ViewMode)}
-          />
+    <div className="flex flex-col gap-3">
+      <div className="flex flex-wrap items-end gap-3">
+        <SelectFilter
+          id="appointment-view"
+          label="View"
+          value={viewMode}
+          options={[
+            { value: "upcoming", label: "Upcoming" },
+            { value: "month", label: "By month" },
+          ]}
+          onChange={(value) => onViewModeChange(value as ViewMode)}
+        />
 
-          <SelectFilter
-            id="appointment-status"
-            label="Status"
-            value={status}
-            allLabel="All statuses"
-            options={APPOINTMENT_STATUSES.map((item) => ({
-              value: item,
-              label: formatLabel(item),
-            }))}
-            onChange={(value) =>
-              onStatusChange(value as AppointmentStatus | "")
-            }
-          />
-        </div>
-
-        {viewMode === "month" ? (
-          <div className="flex items-center gap-3 border-t border-border pt-3">
-            <Button
-              type="button"
-              size="sm"
-              onClick={() => onMonthChange(shiftMonth(month, -1))}
-            >
-              Previous
-            </Button>
-            <p className="min-w-40 text-center text-sm font-medium text-foreground">
-              {formatMonthLabel(month)}
-            </p>
-            <Button
-              type="button"
-              size="sm"
-              onClick={() => onMonthChange(shiftMonth(month, 1))}
-            >
-              Next
-            </Button>
-          </div>
-        ) : null}
+        <SelectFilter
+          id="appointment-status"
+          label="Status"
+          value={status}
+          allLabel="All statuses"
+          options={APPOINTMENT_STATUSES.map((item) => ({
+            value: item,
+            label: formatLabel(item),
+          }))}
+          onChange={(value) => onStatusChange(value as AppointmentStatus | "")}
+        />
       </div>
+
+      {viewMode === "month" ? (
+        <div className="flex items-center gap-3 border-t border-border pt-3">
+          <Button
+            type="button"
+            size="sm"
+            onClick={() => onMonthChange(shiftMonth(month, -1))}
+          >
+            Previous
+          </Button>
+          <p className="min-w-40 text-center text-sm font-medium text-foreground">
+            {formatMonthLabel(month)}
+          </p>
+          <Button
+            type="button"
+            size="sm"
+            onClick={() => onMonthChange(shiftMonth(month, 1))}
+          >
+            Next
+          </Button>
+        </div>
+      ) : null}
     </div>
   );
 }

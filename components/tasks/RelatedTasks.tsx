@@ -1,4 +1,4 @@
-import { StatusBadge } from "@/components/ui";
+import { DetailSection, StatusBadge } from "@/components/ui";
 import { formatDate, formatLabel } from "@/lib/format";
 import { TASK_PRIORITY_TONE, TASK_STATUS_TONE } from "@/lib/status-tone";
 import type { TaskDto } from "@/types/task";
@@ -17,14 +17,7 @@ export function RelatedTasks({
   );
 
   return (
-    <section className="h-full border border-border bg-surface">
-      <div className="border-b border-border px-5 py-4 sm:px-6">
-        <h2 className="text-sm font-semibold text-foreground">Tasks</h2>
-        <p className="mt-0.5 text-xs text-foreground-muted">
-          Related follow-ups
-        </p>
-      </div>
-
+    <DetailSection title="Tasks" subtitle="Related follow-ups" className="h-full">
       {sorted.length === 0 ? (
         <div className="px-5 py-10 text-center text-sm text-foreground-muted sm:px-6">
           {emptyMessage}
@@ -64,6 +57,6 @@ export function RelatedTasks({
           ))}
         </ul>
       )}
-    </section>
+    </DetailSection>
   );
 }

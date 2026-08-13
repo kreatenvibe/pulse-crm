@@ -4,10 +4,14 @@ export { DetailHeader, DetailMeta } from "./DetailHeader";
 export { DetailSection, DetailField } from "./DetailSection";
 export { EmptyState } from "./EmptyState";
 export { ErrorState } from "./ErrorState";
+export { FilterBar } from "./FilterBar";
+export { KpiCard } from "./KpiCard";
 export { LoadingState } from "./LoadingState";
+export { PageHeader } from "./PageHeader";
 export { Pagination } from "./Pagination";
 export { SearchInput } from "./SearchInput";
 export { SelectFilter } from "./SelectFilter";
+export { StatCard, type StatTone } from "./StatCard";
 export { StatusBadge, type StatusBadgeTone } from "./StatusBadge";
 
 // Reusable form primitives (compose with React Hook Form + Zod schemas).

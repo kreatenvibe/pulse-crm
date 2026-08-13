@@ -14,8 +14,9 @@ import {
   FormTextarea,
 } from "@/components/ui";
 import { useCustomers, useLeads, useUsers } from "@/hooks";
-import { ApiError, api } from "@/lib/api";
-import { formatLabel } from "@/lib/format";
+import { api, toErrorMessage } from "@/lib/api";
+import { applyServerFieldErrors } from "@/lib/form-errors";
+import { formatCustomerName, formatLabel } from "@/lib/format";
 import { APPOINTMENT_STATUSES, CreateAppointmentSchema } from "@/lib/schemas";
 import type { AppointmentDto } from "@/types/appointment";
 
@@ -77,12 +78,6 @@ function buildDefaults(appointment?: AppointmentDto): AppointmentFormValues {
   };
 }
 
-function toErrorMessage(error: unknown, fallback: string): string {
-  if (error instanceof ApiError) return error.message;
-  if (error instanceof Error && error.message) return error.message;
-  return fallback;
-}
-
 export function AppointmentForm({
   mode,
   appointment,
@@ -95,6 +90,7 @@ export function AppointmentForm({
     control,
     reset,
     setValue,
+    setError,
     formState: { errors, isSubmitting },
   } = useForm<AppointmentFormValues, unknown, AppointmentFormOutput>({
     resolver: zodResolver(CreateAppointmentSchema),
@@ -117,9 +113,7 @@ export function AppointmentForm({
   }));
   const customerOptions = customers.map((customer) => ({
     value: customer.id,
-    label: customer.businessName
-      ? `${customer.businessName} — ${customer.primaryContact}`
-      : customer.primaryContact,
+    label: formatCustomerName(customer),
   }));
 
   // The lead/customer link is exactly-one-of (enforced server-side). A local
@@ -157,6 +151,7 @@ export function AppointmentForm({
           : await api.post<AppointmentDto>("/api/appointments", values);
       onSuccess?.(saved);
     } catch (error) {
+      applyServerFieldErrors(error, setError);
       setSubmitError(
         toErrorMessage(error, "Could not save appointment. Please try again."),
       );

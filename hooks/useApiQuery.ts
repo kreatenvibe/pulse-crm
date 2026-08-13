@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ApiError, api } from "@/lib/api";
+import { api, toErrorMessage } from "@/lib/api";
 
 type UseApiQueryResult<T> = {
   data: T;
@@ -9,12 +9,6 @@ type UseApiQueryResult<T> = {
   error: string | null;
   refresh: () => void;
 };
-
-function toErrorMessage(error: unknown, fallback: string): string {
-  if (error instanceof ApiError) return error.message;
-  if (error instanceof Error && error.message) return error.message;
-  return fallback;
-}
 
 /**
  * Minimal GET + refresh helper shared by resource hooks.

@@ -18,11 +18,12 @@ import {
 import { activityService } from "./activity.service";
 import { appointmentService } from "./appointment.service";
 import { customerService } from "./customer.service";
-import { ServiceError } from "./errors";
+import { conflict, notFound } from "./errors";
 import { nextId, now } from "./helpers";
 import { noteService } from "./note.service";
 import { taskService } from "./task.service";
-import { assertUserId, parseInput } from "./validation";
+import { parseInput } from "./parse";
+import { assertUserId } from "./validation";
 
 export type { CreateLeadInput, UpdateLeadInput };
 
@@ -241,18 +242,14 @@ class LeadService {
       select: { id: true },
     });
     if (customer) {
-      throw new ServiceError(
+      throw conflict(
         "Cannot delete lead: a converted customer exists for this lead",
-        "CONFLICT",
       );
     }
 
     const deps = await getLeadDependencies(id);
     if (deps.length > 0) {
-      throw new ServiceError(
-        `Cannot delete lead: dependent ${deps.join(", ")} exist`,
-        "CONFLICT",
-      );
+      throw conflict(`Cannot delete lead: dependent ${deps.join(", ")} exist`);
     }
 
     await prisma.leads.delete({ where: { id } });
@@ -267,7 +264,7 @@ class LeadService {
   async convert(id: ID): Promise<ConvertLeadResult> {
     const lead = await this.getById(id);
     if (!lead) {
-      throw new ServiceError("Lead not found", "NOT_FOUND");
+      throw notFound("Lead not found");
     }
 
     const existingCustomer = await customerService.getByLeadId(id);

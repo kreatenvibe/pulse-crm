@@ -27,45 +27,43 @@ export function TaskFilters({
   onPriorityChange,
 }: TaskFiltersProps) {
   return (
-    <div className="border-b border-border pb-4">
-      <div className="flex flex-wrap items-end gap-3">
-        <SelectFilter
-          id="task-view"
-          label="View"
-          value={viewMode}
-          options={[
-            { value: "open", label: "Open tasks" },
-            { value: "overdue", label: "Overdue" },
-            { value: "due_today", label: "Due today" },
-            { value: "completed", label: "Completed" },
-          ]}
-          onChange={(value) => onViewModeChange(value as TaskViewMode)}
-        />
+    <div className="flex flex-wrap items-end gap-3">
+      <SelectFilter
+        id="task-view"
+        label="View"
+        value={viewMode}
+        options={[
+          { value: "open", label: "Open tasks" },
+          { value: "overdue", label: "Overdue" },
+          { value: "due_today", label: "Due today" },
+          { value: "completed", label: "Completed" },
+        ]}
+        onChange={(value) => onViewModeChange(value as TaskViewMode)}
+      />
 
-        <SelectFilter
-          id="task-status"
-          label="Status"
-          value={status}
-          allLabel="All statuses"
-          options={TASK_STATUSES.map((item) => ({
-            value: item,
-            label: formatLabel(item),
-          }))}
-          onChange={(value) => onStatusChange(value as TaskStatus | "")}
-        />
+      <SelectFilter
+        id="task-status"
+        label="Status"
+        value={status}
+        allLabel="All statuses"
+        options={TASK_STATUSES.map((item) => ({
+          value: item,
+          label: formatLabel(item),
+        }))}
+        onChange={(value) => onStatusChange(value as TaskStatus | "")}
+      />
 
-        <SelectFilter
-          id="task-priority"
-          label="Priority"
-          value={priority}
-          allLabel="All priorities"
-          options={TASK_PRIORITIES.map((item) => ({
-            value: item,
-            label: formatLabel(item),
-          }))}
-          onChange={(value) => onPriorityChange(value as TaskPriority | "")}
-        />
-      </div>
+      <SelectFilter
+        id="task-priority"
+        label="Priority"
+        value={priority}
+        allLabel="All priorities"
+        options={TASK_PRIORITIES.map((item) => ({
+          value: item,
+          label: formatLabel(item),
+        }))}
+        onChange={(value) => onPriorityChange(value as TaskPriority | "")}
+      />
     </div>
   );
 }

@@ -1,8 +1,8 @@
-import { serviceErrorResponse } from "@/lib/api-route";
+import { created, ok, okPaginated, readJson, withApiErrors } from "@/lib/api-route";
 import { DEFAULT_PAGE_SIZE } from "@/lib/pagination";
 import { leadService } from "@/services";
 
-export async function GET(request: Request) {
+export const GET = withApiErrors(async (request: Request) => {
   const { searchParams } = new URL(request.url);
   const pageParam = searchParams.get("page");
   const pageSizeParam = searchParams.get("pageSize");
@@ -13,20 +13,16 @@ export async function GET(request: Request) {
     const pageSize =
       pageSizeParam !== null ? Number(pageSizeParam) : DEFAULT_PAGE_SIZE;
     const result = await leadService.list({ page, pageSize });
-    return Response.json(result);
+    return okPaginated(result);
   }
 
   // Full collection kept for client-side filters and related-entity lookups.
   const leads = await leadService.getAll();
-  return Response.json(leads);
-}
+  return ok(leads);
+});
 
-export async function POST(request: Request) {
-  try {
-    const body = await request.json();
-    const lead = await leadService.create(body);
-    return Response.json(lead, { status: 201 });
-  } catch (error) {
-    return serviceErrorResponse(error);
-  }
-}
+export const POST = withApiErrors(async (request: Request) => {
+  const body = await readJson(request);
+  const lead = await leadService.create(body);
+  return created(lead);
+});

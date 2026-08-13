@@ -15,7 +15,7 @@ import {
   StatusBadge,
 } from "@/components/ui";
 import { useCustomers, useService } from "@/hooks";
-import { formatDate, formatLabel } from "@/lib/format";
+import { formatCustomerName, formatDate, formatLabel } from "@/lib/format";
 import { SERVICE_STATUS_TONE } from "@/lib/status-tone";
 
 export default function ServiceDetailsPage() {
@@ -27,9 +27,7 @@ export default function ServiceDetailsPage() {
 
   const customer = customers.find((c) => c.id === service?.customerId);
   const customerLabel = customer
-    ? customer.businessName
-      ? `${customer.businessName} — ${customer.primaryContact}`
-      : customer.primaryContact
+    ? formatCustomerName(customer)
     : (service?.customerId ?? "—");
 
   return (

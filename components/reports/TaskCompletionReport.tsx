@@ -1,4 +1,4 @@
-import { StatCard } from "@/components/dashboard";
+import { StatCard } from "@/components/ui";
 import { DetailSection, EmptyState } from "@/components/ui";
 
 type TaskCompletionReportProps = {

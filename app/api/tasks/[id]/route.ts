@@ -1,45 +1,38 @@
-import { serviceErrorResponse } from "@/lib/api-route";
+import {
+  assertFound,
+  noContent,
+  ok,
+  readJson,
+  withApiErrors,
+} from "@/lib/api-route";
 import { taskService } from "@/services";
 
 type Params = Promise<{ id: string }>;
 
-export async function GET(
-  _request: Request,
-  { params }: { params: Params },
-) {
-  const { id } = await params;
-  const task = await taskService.getById(id);
-  if (!task) {
-    return Response.json({ error: "Not Found" }, { status: 404 });
-  }
-  return Response.json(task);
-}
+export const GET = withApiErrors(
+  async (_request: Request, { params }: { params: Params }) => {
+    const { id } = await params;
+    const task = assertFound(await taskService.getById(id), "Task not found");
+    return ok(task);
+  },
+);
 
-export async function PATCH(
-  request: Request,
-  { params }: { params: Params },
-) {
-  const { id } = await params;
-  try {
-    const body = await request.json();
-    const task = await taskService.update(id, body);
-    if (!task) {
-      return Response.json({ error: "Not Found" }, { status: 404 });
-    }
-    return Response.json(task);
-  } catch (error) {
-    return serviceErrorResponse(error);
-  }
-}
+export const PATCH = withApiErrors(
+  async (request: Request, { params }: { params: Params }) => {
+    const { id } = await params;
+    const body = await readJson(request);
+    const task = assertFound(
+      await taskService.update(id, body),
+      "Task not found",
+    );
+    return ok(task);
+  },
+);
 
-export async function DELETE(
-  _request: Request,
-  { params }: { params: Params },
-) {
-  const { id } = await params;
-  const deleted = await taskService.delete(id);
-  if (!deleted) {
-    return Response.json({ error: "Not Found" }, { status: 404 });
-  }
-  return new Response(null, { status: 204 });
-}
+export const DELETE = withApiErrors(
+  async (_request: Request, { params }: { params: Params }) => {
+    const { id } = await params;
+    assertFound(await taskService.delete(id), "Task not found");
+    return noContent();
+  },
+);

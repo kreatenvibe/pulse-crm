@@ -1,45 +1,41 @@
-import { serviceErrorResponse } from "@/lib/api-route";
+import {
+  assertFound,
+  noContent,
+  ok,
+  readJson,
+  withApiErrors,
+} from "@/lib/api-route";
 import { invoiceService } from "@/services";
 
 type Params = Promise<{ id: string }>;
 
-export async function GET(
-  _request: Request,
-  { params }: { params: Params },
-) {
-  const { id } = await params;
-  const invoice = await invoiceService.getById(id);
-  if (!invoice) {
-    return Response.json({ error: "Not Found" }, { status: 404 });
-  }
-  return Response.json(invoice);
-}
+export const GET = withApiErrors(
+  async (_request: Request, { params }: { params: Params }) => {
+    const { id } = await params;
+    const invoice = assertFound(
+      await invoiceService.getById(id),
+      "Invoice not found",
+    );
+    return ok(invoice);
+  },
+);
 
-export async function PATCH(
-  request: Request,
-  { params }: { params: Params },
-) {
-  const { id } = await params;
-  try {
-    const body = await request.json();
-    const invoice = await invoiceService.update(id, body);
-    if (!invoice) {
-      return Response.json({ error: "Not Found" }, { status: 404 });
-    }
-    return Response.json(invoice);
-  } catch (error) {
-    return serviceErrorResponse(error);
-  }
-}
+export const PATCH = withApiErrors(
+  async (request: Request, { params }: { params: Params }) => {
+    const { id } = await params;
+    const body = await readJson(request);
+    const invoice = assertFound(
+      await invoiceService.update(id, body),
+      "Invoice not found",
+    );
+    return ok(invoice);
+  },
+);
 
-export async function DELETE(
-  _request: Request,
-  { params }: { params: Params },
-) {
-  const { id } = await params;
-  const deleted = await invoiceService.delete(id);
-  if (!deleted) {
-    return Response.json({ error: "Not Found" }, { status: 404 });
-  }
-  return new Response(null, { status: 204 });
-}
+export const DELETE = withApiErrors(
+  async (_request: Request, { params }: { params: Params }) => {
+    const { id } = await params;
+    assertFound(await invoiceService.delete(id), "Invoice not found");
+    return noContent();
+  },
+);

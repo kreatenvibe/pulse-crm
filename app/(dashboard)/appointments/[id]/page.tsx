@@ -8,7 +8,6 @@ import {
   buildAppointmentLookups,
   enrichAppointment,
 } from "@/components/appointments";
-import { KpiCard } from "@/components/dashboard";
 import {
   Button,
   DetailField,
@@ -17,6 +16,7 @@ import {
   DetailSection,
   EmptyState,
   ErrorState,
+  KpiCard,
   LoadingState,
   StatusBadge,
 } from "@/components/ui";

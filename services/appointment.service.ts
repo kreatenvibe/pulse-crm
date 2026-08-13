@@ -9,13 +9,10 @@ import {
   type CreateAppointmentInput,
   type UpdateAppointmentInput,
 } from "@/lib/schemas/appointment.schema";
-import { ServiceError } from "./errors";
+import { validation } from "./errors";
 import { nextId, now } from "./helpers";
-import {
-  assertUserId,
-  parseInput,
-  resolveLeadCustomerLink,
-} from "./validation";
+import { parseInput } from "./parse";
+import { assertUserId, resolveLeadCustomerLink } from "./validation";
 
 export type { CreateAppointmentInput, UpdateAppointmentInput };
 
@@ -130,7 +127,7 @@ class AppointmentService {
     const start = validated.start ?? existing.start;
     const end = validated.end ?? existing.end;
     if (end < start) {
-      throw new ServiceError("end must be on or after start", "VALIDATION");
+      throw validation("end must be on or after start");
     }
     const row = await prisma.appointments.update({
       where: { id },

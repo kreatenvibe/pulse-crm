@@ -10,11 +10,8 @@ import {
   type UpdateInvoiceInput,
 } from "@/lib/schemas/invoice.schema";
 import { nextId, now } from "./helpers";
-import {
-  assertCustomerId,
-  assertOptionalServiceId,
-  parseInput,
-} from "./validation";
+import { parseInput } from "./parse";
+import { assertCustomerId, assertOptionalServiceId } from "./validation";
 
 export type { CreateInvoiceInput, UpdateInvoiceInput };
 

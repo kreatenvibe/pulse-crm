@@ -14,7 +14,9 @@ import {
 import {
   Button,
   ErrorState,
+  FilterBar,
   LoadingState,
+  PageHeader,
   Pagination,
 } from "@/components/ui";
 import { useAppointments, useCustomers, useLeads } from "@/hooks";
@@ -84,43 +86,54 @@ export default function AppointmentsPage() {
       : "No appointments in this month match your filters.";
 
   return (
-    <div className="flex w-full flex-col gap-6 px-5 py-6 sm:px-6 lg:px-8">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-            Appointments
-          </h1>
-          <p className="mt-1 text-sm text-foreground-muted">
-            View upcoming meetings or browse appointments by month.
-          </p>
-        </div>
-        <Link href="/appointments/new">
-          <Button variant="primary">New appointment</Button>
-        </Link>
-      </div>
-
-      <AppointmentFilters
-        viewMode={viewMode}
-        status={status}
-        month={month}
-        onViewModeChange={setViewMode}
-        onStatusChange={setStatus}
-        onMonthChange={setMonth}
+    <div className="flex w-full flex-col">
+      <PageHeader
+        title="Appointments"
+        description="View upcoming meetings or browse appointments by month."
+        actions={
+          <Link href="/appointments/new">
+            <Button variant="primary">New appointment</Button>
+          </Link>
+        }
       />
 
+      <FilterBar>
+        <AppointmentFilters
+          viewMode={viewMode}
+          status={status}
+          month={month}
+          onViewModeChange={setViewMode}
+          onStatusChange={setStatus}
+          onMonthChange={setMonth}
+        />
+      </FilterBar>
+
       {loading ? (
-        <LoadingState message="Loading appointments…" />
+        <div className="px-5 py-6 sm:px-6 lg:px-8">
+          <LoadingState message="Loading appointments…" />
+        </div>
       ) : error ? (
-        <ErrorState message={error} />
+        <div className="px-5 py-6 sm:px-6 lg:px-8">
+          <ErrorState message={error} />
+        </div>
       ) : viewMode === "month" ? (
-        <AppointmentCalendar month={month} appointments={filteredAppointments} />
-      ) : (
-        <div className="flex flex-col gap-4">
-          <AppointmentSchedule
-            appointments={pageAppointments}
-            emptyMessage={emptyMessage}
+        <div className="px-5 py-6 sm:px-6 lg:px-8">
+          <AppointmentCalendar
+            month={month}
+            appointments={filteredAppointments}
           />
-          <Pagination pagination={pagination} onPageChange={setPage} />
+        </div>
+      ) : (
+        <div className="flex flex-col">
+          <div className="px-5 sm:px-6 lg:px-8">
+            <AppointmentSchedule
+              appointments={pageAppointments}
+              emptyMessage={emptyMessage}
+            />
+          </div>
+          <div className="border-t border-border px-5 py-4 sm:px-6 lg:px-8">
+            <Pagination pagination={pagination} onPageChange={setPage} />
+          </div>
         </div>
       )}
     </div>

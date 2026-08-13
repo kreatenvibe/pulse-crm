@@ -1,45 +1,41 @@
-import { serviceErrorResponse } from "@/lib/api-route";
+import {
+  assertFound,
+  noContent,
+  ok,
+  readJson,
+  withApiErrors,
+} from "@/lib/api-route";
 import { activityService } from "@/services";
 
 type Params = Promise<{ id: string }>;
 
-export async function GET(
-  _request: Request,
-  { params }: { params: Params },
-) {
-  const { id } = await params;
-  const activity = await activityService.getById(id);
-  if (!activity) {
-    return Response.json({ error: "Not Found" }, { status: 404 });
-  }
-  return Response.json(activity);
-}
+export const GET = withApiErrors(
+  async (_request: Request, { params }: { params: Params }) => {
+    const { id } = await params;
+    const activity = assertFound(
+      await activityService.getById(id),
+      "Activity not found",
+    );
+    return ok(activity);
+  },
+);
 
-export async function PATCH(
-  request: Request,
-  { params }: { params: Params },
-) {
-  const { id } = await params;
-  try {
-    const body = await request.json();
-    const activity = await activityService.update(id, body);
-    if (!activity) {
-      return Response.json({ error: "Not Found" }, { status: 404 });
-    }
-    return Response.json(activity);
-  } catch (error) {
-    return serviceErrorResponse(error);
-  }
-}
+export const PATCH = withApiErrors(
+  async (request: Request, { params }: { params: Params }) => {
+    const { id } = await params;
+    const body = await readJson(request);
+    const activity = assertFound(
+      await activityService.update(id, body),
+      "Activity not found",
+    );
+    return ok(activity);
+  },
+);
 
-export async function DELETE(
-  _request: Request,
-  { params }: { params: Params },
-) {
-  const { id } = await params;
-  const deleted = await activityService.delete(id);
-  if (!deleted) {
-    return Response.json({ error: "Not Found" }, { status: 404 });
-  }
-  return new Response(null, { status: 204 });
-}
+export const DELETE = withApiErrors(
+  async (_request: Request, { params }: { params: Params }) => {
+    const { id } = await params;
+    assertFound(await activityService.delete(id), "Activity not found");
+    return noContent();
+  },
+);

@@ -1,49 +1,38 @@
-import { serviceErrorResponse } from "@/lib/api-route";
+import {
+  assertFound,
+  noContent,
+  ok,
+  readJson,
+  withApiErrors,
+} from "@/lib/api-route";
 import { leadService } from "@/services";
 
 type Params = Promise<{ id: string }>;
 
-export async function GET(
-  _request: Request,
-  { params }: { params: Params },
-) {
-  const { id } = await params;
-  const lead = await leadService.getById(id);
-  if (!lead) {
-    return Response.json({ error: "Not Found" }, { status: 404 });
-  }
-  return Response.json(lead);
-}
+export const GET = withApiErrors(
+  async (_request: Request, { params }: { params: Params }) => {
+    const { id } = await params;
+    const lead = assertFound(await leadService.getById(id), "Lead not found");
+    return ok(lead);
+  },
+);
 
-export async function PATCH(
-  request: Request,
-  { params }: { params: Params },
-) {
-  const { id } = await params;
-  try {
-    const body = await request.json();
-    const lead = await leadService.update(id, body);
-    if (!lead) {
-      return Response.json({ error: "Not Found" }, { status: 404 });
-    }
-    return Response.json(lead);
-  } catch (error) {
-    return serviceErrorResponse(error);
-  }
-}
+export const PATCH = withApiErrors(
+  async (request: Request, { params }: { params: Params }) => {
+    const { id } = await params;
+    const body = await readJson(request);
+    const lead = assertFound(
+      await leadService.update(id, body),
+      "Lead not found",
+    );
+    return ok(lead);
+  },
+);
 
-export async function DELETE(
-  _request: Request,
-  { params }: { params: Params },
-) {
-  const { id } = await params;
-  try {
-    const deleted = await leadService.delete(id);
-    if (!deleted) {
-      return Response.json({ error: "Not Found" }, { status: 404 });
-    }
-    return new Response(null, { status: 204 });
-  } catch (error) {
-    return serviceErrorResponse(error);
-  }
-}
+export const DELETE = withApiErrors(
+  async (_request: Request, { params }: { params: Params }) => {
+    const { id } = await params;
+    assertFound(await leadService.delete(id), "Lead not found");
+    return noContent();
+  },
+);

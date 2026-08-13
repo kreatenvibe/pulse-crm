@@ -1,45 +1,41 @@
-import { serviceErrorResponse } from "@/lib/api-route";
+import {
+  assertFound,
+  noContent,
+  ok,
+  readJson,
+  withApiErrors,
+} from "@/lib/api-route";
 import { serviceService } from "@/services";
 
 type Params = Promise<{ id: string }>;
 
-export async function GET(
-  _request: Request,
-  { params }: { params: Params },
-) {
-  const { id } = await params;
-  const service = await serviceService.getById(id);
-  if (!service) {
-    return Response.json({ error: "Not Found" }, { status: 404 });
-  }
-  return Response.json(service);
-}
+export const GET = withApiErrors(
+  async (_request: Request, { params }: { params: Params }) => {
+    const { id } = await params;
+    const service = assertFound(
+      await serviceService.getById(id),
+      "Service not found",
+    );
+    return ok(service);
+  },
+);
 
-export async function PATCH(
-  request: Request,
-  { params }: { params: Params },
-) {
-  const { id } = await params;
-  try {
-    const body = await request.json();
-    const service = await serviceService.update(id, body);
-    if (!service) {
-      return Response.json({ error: "Not Found" }, { status: 404 });
-    }
-    return Response.json(service);
-  } catch (error) {
-    return serviceErrorResponse(error);
-  }
-}
+export const PATCH = withApiErrors(
+  async (request: Request, { params }: { params: Params }) => {
+    const { id } = await params;
+    const body = await readJson(request);
+    const service = assertFound(
+      await serviceService.update(id, body),
+      "Service not found",
+    );
+    return ok(service);
+  },
+);
 
-export async function DELETE(
-  _request: Request,
-  { params }: { params: Params },
-) {
-  const { id } = await params;
-  const deleted = await serviceService.delete(id);
-  if (!deleted) {
-    return Response.json({ error: "Not Found" }, { status: 404 });
-  }
-  return new Response(null, { status: 204 });
-}
+export const DELETE = withApiErrors(
+  async (_request: Request, { params }: { params: Params }) => {
+    const { id } = await params;
+    assertFound(await serviceService.delete(id), "Service not found");
+    return noContent();
+  },
+);

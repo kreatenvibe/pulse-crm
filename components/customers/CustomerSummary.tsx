@@ -4,7 +4,7 @@ import {
   FileText,
   Wrench,
 } from "lucide-react";
-import { KpiCard } from "@/components/dashboard";
+import { KpiCard } from "@/components/ui";
 import type { AppointmentDto } from "@/types/appointment";
 import type { InvoiceDto } from "@/types/invoice";
 import type { ServiceDto } from "@/types/service";

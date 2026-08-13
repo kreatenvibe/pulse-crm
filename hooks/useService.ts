@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ApiError, api } from "@/lib/api";
+import { ApiError, api, toErrorMessage } from "@/lib/api";
 import type { ServiceDto } from "@/types/service";
 
 type UseServiceResult = {
@@ -10,12 +10,6 @@ type UseServiceResult = {
   error: string | null;
   refresh: () => void;
 };
-
-function toErrorMessage(error: unknown, fallback: string): string {
-  if (error instanceof ApiError) return error.message;
-  if (error instanceof Error && error.message) return error.message;
-  return fallback;
-}
 
 /** Fetch a single service by id (GET /api/services/[id]). */
 export function useService(id: string): UseServiceResult {

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ApiError, api } from "@/lib/api";
+import { ApiError, api, toErrorMessage } from "@/lib/api";
 import type { InvoiceDto } from "@/types/invoice";
 
 type UseInvoiceResult = {
@@ -10,12 +10,6 @@ type UseInvoiceResult = {
   error: string | null;
   refresh: () => void;
 };
-
-function toErrorMessage(error: unknown, fallback: string): string {
-  if (error instanceof ApiError) return error.message;
-  if (error instanceof Error && error.message) return error.message;
-  return fallback;
-}
 
 /** Fetch a single invoice by id (GET /api/invoices/[id]). */
 export function useInvoice(id: string): UseInvoiceResult {

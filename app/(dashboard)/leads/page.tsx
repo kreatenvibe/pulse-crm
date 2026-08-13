@@ -11,7 +11,9 @@ import {
 import {
   Button,
   ErrorState,
+  FilterBar,
   LoadingState,
+  PageHeader,
   Pagination,
 } from "@/components/ui";
 import { useLeads } from "@/hooks";
@@ -49,30 +51,18 @@ export default function LeadsPage() {
 
   return (
     <div className="flex w-full flex-col">
-      <div className="border-b border-border px-5 py-6 sm:px-6 lg:px-8">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <div className="flex flex-wrap items-baseline gap-2.5">
-              <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-                Leads
-              </h1>
-              {totalCount !== null ? (
-                <span className="text-lg font-medium text-foreground-muted tabular-nums">
-                  {totalCount}
-                </span>
-              ) : null}
-            </div>
-            <p className="mt-1 text-sm text-foreground-muted">
-              Search, filter, and review incoming leads.
-            </p>
-          </div>
+      <PageHeader
+        title="Leads"
+        description="Search, filter, and review incoming leads."
+        count={totalCount ?? undefined}
+        actions={
           <Link href="/leads/new">
             <Button variant="primary">New lead</Button>
           </Link>
-        </div>
-      </div>
+        }
+      />
 
-      <div className="border-b border-border px-5 py-4 sm:px-6 lg:px-8">
+      <FilterBar>
         <LeadFilters
           search={search}
           status={status}
@@ -83,7 +73,7 @@ export default function LeadsPage() {
           onSourceChange={setSource}
           onSortChange={setSort}
         />
-      </div>
+      </FilterBar>
 
       {loading ? (
         <div className="px-5 py-6 sm:px-6 lg:px-8">

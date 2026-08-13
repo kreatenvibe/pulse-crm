@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ApiError, api } from "@/lib/api";
+import { api, toErrorMessage } from "@/lib/api";
 import type { CustomerDetailsDto } from "@/types/customer-details";
 
 type UseCustomerDetailsResult = {
@@ -10,12 +10,6 @@ type UseCustomerDetailsResult = {
   error: string | null;
   refresh: () => void;
 };
-
-function toErrorMessage(error: unknown, fallback: string): string {
-  if (error instanceof ApiError) return error.message;
-  if (error instanceof Error && error.message) return error.message;
-  return fallback;
-}
 
 export function useCustomerDetails(id: string): UseCustomerDetailsResult {
   const [data, setData] = useState<CustomerDetailsDto | null>(null);

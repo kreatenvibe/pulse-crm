@@ -16,17 +16,14 @@ import {
 } from "@/lib/schemas/customer.schema";
 import { activityService } from "./activity.service";
 import { appointmentService } from "./appointment.service";
-import { ServiceError } from "./errors";
+import { conflict } from "./errors";
 import { invoiceService } from "./invoice.service";
 import { nextId, now } from "./helpers";
 import { noteService } from "./note.service";
 import { serviceService } from "./service.service";
 import { taskService } from "./task.service";
-import {
-  assertLeadId,
-  assertUserId,
-  parseInput,
-} from "./validation";
+import { parseInput } from "./parse";
+import { assertLeadId, assertUserId } from "./validation";
 
 export type { CreateCustomerInput, UpdateCustomerInput };
 
@@ -225,9 +222,8 @@ class CustomerService {
 
     const deps = await getCustomerDependencies(id);
     if (deps.length > 0) {
-      throw new ServiceError(
+      throw conflict(
         `Cannot delete customer: dependent ${deps.join(", ")} exist`,
-        "CONFLICT",
       );
     }
 

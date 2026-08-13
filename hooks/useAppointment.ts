@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ApiError, api } from "@/lib/api";
+import { ApiError, api, toErrorMessage } from "@/lib/api";
 import type { AppointmentDto } from "@/types/appointment";
 
 type UseAppointmentResult = {
@@ -10,12 +10,6 @@ type UseAppointmentResult = {
   error: string | null;
   refresh: () => void;
 };
-
-function toErrorMessage(error: unknown, fallback: string): string {
-  if (error instanceof ApiError) return error.message;
-  if (error instanceof Error && error.message) return error.message;
-  return fallback;
-}
 
 /** Fetch a single appointment by id (GET /api/appointments/[id]). */
 export function useAppointment(id: string): UseAppointmentResult {

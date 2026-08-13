@@ -13,8 +13,9 @@ import {
   FormTextarea,
 } from "@/components/ui";
 import { useCustomers } from "@/hooks";
-import { ApiError, api } from "@/lib/api";
-import { formatLabel } from "@/lib/format";
+import { api, toErrorMessage } from "@/lib/api";
+import { applyServerFieldErrors } from "@/lib/form-errors";
+import { formatCustomerName, formatLabel } from "@/lib/format";
 import { CreateServiceSchema, SERVICE_STATUSES } from "@/lib/schemas";
 import type { ServiceDto } from "@/types/service";
 
@@ -63,12 +64,6 @@ function buildDefaults(service?: ServiceDto): ServiceFormValues {
   };
 }
 
-function toErrorMessage(error: unknown, fallback: string): string {
-  if (error instanceof ApiError) return error.message;
-  if (error instanceof Error && error.message) return error.message;
-  return fallback;
-}
-
 export function ServiceForm({
   mode,
   service,
@@ -80,6 +75,7 @@ export function ServiceForm({
     handleSubmit,
     control,
     reset,
+    setError,
     formState: { errors, isSubmitting },
   } = useForm<ServiceFormValues, unknown, ServiceFormOutput>({
     resolver: zodResolver(CreateServiceSchema),
@@ -93,9 +89,7 @@ export function ServiceForm({
   const { data: customers, loading: customersLoading } = useCustomers();
   const customerOptions = customers.map((customer) => ({
     value: customer.id,
-    label: customer.businessName
-      ? `${customer.businessName} — ${customer.primaryContact}`
-      : customer.primaryContact,
+    label: formatCustomerName(customer),
   }));
 
   // Re-populate when the edited service changes (e.g. navigating between them).
@@ -113,6 +107,7 @@ export function ServiceForm({
           : await api.post<ServiceDto>("/api/services", values);
       onSuccess?.(saved);
     } catch (error) {
+      applyServerFieldErrors(error, setError);
       setSubmitError(
         toErrorMessage(error, "Could not save service. Please try again."),
       );

@@ -13,7 +13,8 @@ import {
   FormTextarea,
 } from "@/components/ui";
 import { useLeads, useUsers } from "@/hooks";
-import { ApiError, api } from "@/lib/api";
+import { api, toErrorMessage } from "@/lib/api";
+import { applyServerFieldErrors } from "@/lib/form-errors";
 import { formatLabel } from "@/lib/format";
 import { CreateCustomerSchema, CUSTOMER_LIFECYCLE_STATUSES } from "@/lib/schemas";
 import type { CustomerDto } from "@/types/customer";
@@ -54,12 +55,6 @@ function buildDefaults(customer?: CustomerDto): CustomerFormValues {
   };
 }
 
-function toErrorMessage(error: unknown, fallback: string): string {
-  if (error instanceof ApiError) return error.message;
-  if (error instanceof Error && error.message) return error.message;
-  return fallback;
-}
-
 export function CustomerForm({
   mode,
   customer,
@@ -71,6 +66,7 @@ export function CustomerForm({
     handleSubmit,
     control,
     reset,
+    setError,
     formState: { errors, isSubmitting },
   } = useForm<CustomerFormValues, unknown, CustomerFormOutput>({
     resolver: zodResolver(CreateCustomerSchema),
@@ -106,6 +102,7 @@ export function CustomerForm({
           : await api.post<CustomerDto>("/api/customers", values);
       onSuccess?.(saved);
     } catch (error) {
+      applyServerFieldErrors(error, setError);
       setSubmitError(
         toErrorMessage(error, "Could not save customer. Please try again."),
       );

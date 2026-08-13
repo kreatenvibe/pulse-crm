@@ -12,8 +12,9 @@ import {
   FormSelect,
 } from "@/components/ui";
 import { useCustomers, useServices } from "@/hooks";
-import { ApiError, api } from "@/lib/api";
-import { formatLabel } from "@/lib/format";
+import { api, toErrorMessage } from "@/lib/api";
+import { applyServerFieldErrors } from "@/lib/form-errors";
+import { formatCustomerName, formatLabel } from "@/lib/format";
 import { CreateInvoiceSchema, INVOICE_STATUSES } from "@/lib/schemas";
 import type { InvoiceDto } from "@/types/invoice";
 
@@ -72,12 +73,6 @@ function buildDefaults(invoice?: InvoiceDto): InvoiceFormValues {
   };
 }
 
-function toErrorMessage(error: unknown, fallback: string): string {
-  if (error instanceof ApiError) return error.message;
-  if (error instanceof Error && error.message) return error.message;
-  return fallback;
-}
-
 export function InvoiceForm({
   mode,
   invoice,
@@ -89,6 +84,7 @@ export function InvoiceForm({
     handleSubmit,
     control,
     reset,
+    setError,
     formState: { errors, isSubmitting },
   } = useForm<InvoiceFormValues, unknown, InvoiceFormOutput>({
     resolver: zodResolver(CreateInvoiceSchema),
@@ -103,9 +99,7 @@ export function InvoiceForm({
   const { data: services, loading: servicesLoading } = useServices();
   const customerOptions = customers.map((customer) => ({
     value: customer.id,
-    label: customer.businessName
-      ? `${customer.businessName} — ${customer.primaryContact}`
-      : customer.primaryContact,
+    label: formatCustomerName(customer),
   }));
   const serviceOptions = services.map((service) => ({
     value: service.id,
@@ -133,6 +127,7 @@ export function InvoiceForm({
           : await api.post<InvoiceDto>("/api/invoices", payload);
       onSuccess?.(saved);
     } catch (error) {
+      applyServerFieldErrors(error, setError);
       setSubmitError(
         toErrorMessage(error, "Could not save invoice. Please try again."),
       );

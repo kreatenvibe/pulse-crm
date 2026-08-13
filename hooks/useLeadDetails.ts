@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ApiError, api } from "@/lib/api";
+import { api, toErrorMessage } from "@/lib/api";
 import type { LeadStatus } from "@/types/lead";
 import type { LeadDetailsDto } from "@/types/lead-details";
 
@@ -21,12 +21,6 @@ type UseLeadDetailsResult = {
   }) => Promise<boolean>;
   convertLead: () => Promise<boolean>;
 };
-
-function toErrorMessage(error: unknown, fallback: string): string {
-  if (error instanceof ApiError) return error.message;
-  if (error instanceof Error && error.message) return error.message;
-  return fallback;
-}
 
 export function useLeadDetails(id: string): UseLeadDetailsResult {
   const [data, setData] = useState<LeadDetailsDto | null>(null);

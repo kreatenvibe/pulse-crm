@@ -1,4 +1,4 @@
-import { StatusBadge } from "@/components/ui";
+import { DetailSection, StatusBadge } from "@/components/ui";
 import { formatDate, formatLabel, formatMoney } from "@/lib/format";
 import { INVOICE_STATUS_TONE } from "@/lib/status-tone";
 import type { InvoiceDto } from "@/types/invoice";
@@ -13,12 +13,11 @@ export function CustomerInvoices({ invoices }: CustomerInvoicesProps) {
   );
 
   return (
-    <section className="h-full border border-border bg-surface">
-      <div className="border-b border-border px-5 py-4 sm:px-6">
-        <h2 className="text-sm font-semibold text-foreground">Invoices</h2>
-        <p className="mt-0.5 text-xs text-foreground-muted">Billing history</p>
-      </div>
-
+    <DetailSection
+      title="Invoices"
+      subtitle="Billing history"
+      className="h-full"
+    >
       {sorted.length === 0 ? (
         <div className="px-5 py-10 text-center text-sm text-foreground-muted sm:px-6">
           No invoices for this customer.
@@ -57,6 +56,6 @@ export function CustomerInvoices({ invoices }: CustomerInvoicesProps) {
           ))}
         </ul>
       )}
-    </section>
+    </DetailSection>
   );
 }

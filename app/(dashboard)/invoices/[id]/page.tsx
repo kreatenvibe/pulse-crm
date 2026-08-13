@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { CalendarClock, UserRound, Wallet } from "lucide-react";
 import { useParams } from "next/navigation";
-import { KpiCard } from "@/components/dashboard";
 import {
   Button,
   DetailField,
@@ -12,11 +11,17 @@ import {
   DetailSection,
   EmptyState,
   ErrorState,
+  KpiCard,
   LoadingState,
   StatusBadge,
 } from "@/components/ui";
 import { useCustomers, useInvoice, useServices } from "@/hooks";
-import { formatDate, formatLabel, formatMoney } from "@/lib/format";
+import {
+  formatCustomerName,
+  formatDate,
+  formatLabel,
+  formatMoney,
+} from "@/lib/format";
 import { INVOICE_STATUS_TONE } from "@/lib/status-tone";
 
 export default function InvoiceDetailsPage() {
@@ -29,9 +34,7 @@ export default function InvoiceDetailsPage() {
 
   const customer = customers.find((c) => c.id === invoice?.customerId);
   const customerLabel = customer
-    ? customer.businessName
-      ? `${customer.businessName} — ${customer.primaryContact}`
-      : customer.primaryContact
+    ? formatCustomerName(customer)
     : (invoice?.customerId ?? "—");
 
   const service = services.find((s) => s.id === invoice?.serviceId);

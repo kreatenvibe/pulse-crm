@@ -169,15 +169,19 @@ Decisions that are actually reflected in the codebase or `AGENTS.md`. Keep entri
 
 ---
 
-## ADR-016 — Centralized API error mapping
+## ADR-016 — Centralized API error handling & deterministic contract
 
-**Decision:** `lib/api-route.ts` exports `serviceErrorResponse`, which maps `ServiceError` → HTTP (`400` / `404` / `409`) with `{ error: message }`. Mutating routes catch and return that helper.
+**Decision:** `lib/api-route.ts` owns all HTTP concerns. Every route wraps its handler in `withApiErrors`, which routes any thrown value through `apiErrorResponse`. The `ErrorCode` taxonomy (`services/errors.ts`) maps to status once: `VALIDATION→400`, `UNAUTHORIZED→401`, `FORBIDDEN→403`, `NOT_FOUND→404`, `CONFLICT→409`, `INTERNAL→500`. Zod errors that reach the boundary → 400 with field details; Prisma `P2002` → 409, `P2025` → 404; anything else is logged server-side and returned as a bare `500 "Internal Server Error"` (no message/stack/SQL/Prisma detail leaks).
 
-**Why:** Keeps every route handler thin and status-consistent without duplicating the code→status switch.
+Responses are deterministic envelopes: success is `{ success: true, data, pagination? }` (helpers `ok` / `created` / `okPaginated` / `noContent`); error is `{ success: false, error: { message, details? } }`. `details` is `Record<string, string[]>` from Zod field errors.
 
-**Consequence:** This is intentionally one function, not a generic route-handler framework or middleware stack.
+**404 architecture:** Services stay transport-agnostic and return `null` / `false` for "not found". Routes translate that into a thrown `ServiceError("NOT_FOUND")` via the shared `assertFound` helper, so every 404 flows through the one centralized handler — no route hand-writes a 404.
 
-**Where:** `lib/api-route.ts`; `app/api/**` POST/PATCH/DELETE (and convert) catch blocks.
+**Why:** One code→status→body map keeps routes thin, responses uniform, and internal errors un-leaked, while services remain HTTP-free and reusable.
+
+**Consequence:** This is intentionally a small set of helpers, not a generic route-handler framework or middleware stack. `lib/api.ts` unwraps the success envelope centrally so existing consumers keep their shapes; `UNAUTHORIZED` / `FORBIDDEN` are representable now for a future authenticated fork but never thrown yet.
+
+**Where:** `lib/api-route.ts`, `services/errors.ts`; every handler in `app/api/**`.
 
 ---
 

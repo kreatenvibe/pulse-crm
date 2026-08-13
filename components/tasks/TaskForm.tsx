@@ -14,8 +14,9 @@ import {
   FormTextarea,
 } from "@/components/ui";
 import { useCustomers, useLeads, useUsers } from "@/hooks";
-import { ApiError, api } from "@/lib/api";
-import { formatLabel } from "@/lib/format";
+import { api, toErrorMessage } from "@/lib/api";
+import { applyServerFieldErrors } from "@/lib/form-errors";
+import { formatCustomerName, formatLabel } from "@/lib/format";
 import { CreateTaskSchema, TASK_PRIORITIES, TASK_STATUSES } from "@/lib/schemas";
 import type { TaskDto } from "@/types/task";
 
@@ -76,12 +77,6 @@ function buildDefaults(task?: TaskDto): TaskFormValues {
   };
 }
 
-function toErrorMessage(error: unknown, fallback: string): string {
-  if (error instanceof ApiError) return error.message;
-  if (error instanceof Error && error.message) return error.message;
-  return fallback;
-}
-
 export function TaskForm({ mode, task, onSuccess, onCancel }: TaskFormProps) {
   const {
     register,
@@ -89,6 +84,7 @@ export function TaskForm({ mode, task, onSuccess, onCancel }: TaskFormProps) {
     control,
     reset,
     setValue,
+    setError,
     formState: { errors, isSubmitting },
   } = useForm<TaskFormValues, unknown, TaskFormOutput>({
     resolver: zodResolver(CreateTaskSchema),
@@ -111,9 +107,7 @@ export function TaskForm({ mode, task, onSuccess, onCancel }: TaskFormProps) {
   }));
   const customerOptions = customers.map((customer) => ({
     value: customer.id,
-    label: customer.businessName
-      ? `${customer.businessName} — ${customer.primaryContact}`
-      : customer.primaryContact,
+    label: formatCustomerName(customer),
   }));
 
   // The lead/customer link is exactly-one-of (enforced server-side). A local
@@ -145,6 +139,7 @@ export function TaskForm({ mode, task, onSuccess, onCancel }: TaskFormProps) {
           : await api.post<TaskDto>("/api/tasks", values);
       onSuccess?.(saved);
     } catch (error) {
+      applyServerFieldErrors(error, setError);
       setSubmitError(
         toErrorMessage(error, "Could not save task. Please try again."),
       );

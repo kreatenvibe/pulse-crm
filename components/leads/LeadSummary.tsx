@@ -4,7 +4,7 @@ import {
   Clock,
   MessageSquare,
 } from "lucide-react";
-import { KpiCard } from "@/components/dashboard";
+import { KpiCard } from "@/components/ui";
 import type { ActivityDto } from "@/types/activity";
 import type { AppointmentDto } from "@/types/appointment";
 import type { LeadDto } from "@/types/lead";

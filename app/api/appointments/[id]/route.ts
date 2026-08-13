@@ -1,45 +1,41 @@
-import { serviceErrorResponse } from "@/lib/api-route";
+import {
+  assertFound,
+  noContent,
+  ok,
+  readJson,
+  withApiErrors,
+} from "@/lib/api-route";
 import { appointmentService } from "@/services";
 
 type Params = Promise<{ id: string }>;
 
-export async function GET(
-  _request: Request,
-  { params }: { params: Params },
-) {
-  const { id } = await params;
-  const appointment = await appointmentService.getById(id);
-  if (!appointment) {
-    return Response.json({ error: "Not Found" }, { status: 404 });
-  }
-  return Response.json(appointment);
-}
+export const GET = withApiErrors(
+  async (_request: Request, { params }: { params: Params }) => {
+    const { id } = await params;
+    const appointment = assertFound(
+      await appointmentService.getById(id),
+      "Appointment not found",
+    );
+    return ok(appointment);
+  },
+);
 
-export async function PATCH(
-  request: Request,
-  { params }: { params: Params },
-) {
-  const { id } = await params;
-  try {
-    const body = await request.json();
-    const appointment = await appointmentService.update(id, body);
-    if (!appointment) {
-      return Response.json({ error: "Not Found" }, { status: 404 });
-    }
-    return Response.json(appointment);
-  } catch (error) {
-    return serviceErrorResponse(error);
-  }
-}
+export const PATCH = withApiErrors(
+  async (request: Request, { params }: { params: Params }) => {
+    const { id } = await params;
+    const body = await readJson(request);
+    const appointment = assertFound(
+      await appointmentService.update(id, body),
+      "Appointment not found",
+    );
+    return ok(appointment);
+  },
+);
 
-export async function DELETE(
-  _request: Request,
-  { params }: { params: Params },
-) {
-  const { id } = await params;
-  const deleted = await appointmentService.delete(id);
-  if (!deleted) {
-    return Response.json({ error: "Not Found" }, { status: 404 });
-  }
-  return new Response(null, { status: 204 });
-}
+export const DELETE = withApiErrors(
+  async (_request: Request, { params }: { params: Params }) => {
+    const { id } = await params;
+    assertFound(await appointmentService.delete(id), "Appointment not found");
+    return noContent();
+  },
+);

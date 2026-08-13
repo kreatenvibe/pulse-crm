@@ -18,7 +18,8 @@ import {
   FormTextarea,
 } from "@/components/ui";
 import { useUsers } from "@/hooks";
-import { ApiError, api } from "@/lib/api";
+import { api, toErrorMessage } from "@/lib/api";
+import { applyServerFieldErrors } from "@/lib/form-errors";
 import { formatLabel } from "@/lib/format";
 import {
   CreateLeadSchema,
@@ -84,18 +85,13 @@ function buildDefaults(lead?: LeadDto): LeadFormValues {
   };
 }
 
-function toErrorMessage(error: unknown, fallback: string): string {
-  if (error instanceof ApiError) return error.message;
-  if (error instanceof Error && error.message) return error.message;
-  return fallback;
-}
-
 export function LeadForm({ mode, lead, onSuccess, onCancel }: LeadFormProps) {
   const {
     register,
     handleSubmit,
     control,
     reset,
+    setError,
     formState: { errors, isSubmitting },
   } = useForm<LeadFormValues, unknown, LeadFormOutput>({
     resolver: zodResolver(CreateLeadSchema),
@@ -133,6 +129,7 @@ export function LeadForm({ mode, lead, onSuccess, onCancel }: LeadFormProps) {
           : await api.post<LeadDto>("/api/leads", values);
       onSuccess?.(saved);
     } catch (error) {
+      applyServerFieldErrors(error, setError);
       setSubmitError(
         toErrorMessage(error, "Could not save lead. Please try again."),
       );

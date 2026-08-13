@@ -10,10 +10,10 @@ import {
   type UpdateTaskInput,
 } from "@/lib/schemas/task.schema";
 import { nextId, now } from "./helpers";
+import { parseInput } from "./parse";
 import {
   assertLeadCustomerXor,
   assertUserId,
-  parseInput,
   resolveLeadCustomerLink,
 } from "./validation";
 
