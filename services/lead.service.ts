@@ -82,15 +82,21 @@ function toUpdatePatch(validated: UpdateLeadInput): Prisma.leadsUncheckedUpdateI
   return patch;
 }
 
-/** Names of tables that still reference this lead, in a stable report order. */
-async function getLeadDependencies(id: ID): Promise<string[]> {
+/**
+ * Names of tables that still reference this lead, in a stable report order.
+ * Scoped defensively by `organizationId` even though `id` itself is already
+ * proven org-owned by every caller (`delete` runs this after its own
+ * org-scoped existence check) — matches plan.md §9's guidance for exactly
+ * this shape of internal dependency count.
+ */
+async function getLeadDependencies(organizationId: ID, id: ID): Promise<string[]> {
   const deps: string[] = [];
 
   const [taskCount, apptCount, noteCount, activityCount] = await Promise.all([
-    prisma.tasks.count({ where: { lead_id: id } }),
-    prisma.appointments.count({ where: { lead_id: id } }),
-    prisma.notes.count({ where: { entity_type: "lead", entity_id: id } }),
-    prisma.activities.count({ where: { entity_type: "lead", entity_id: id } }),
+    prisma.tasks.count({ where: { lead_id: id, organization_id: organizationId } }),
+    prisma.appointments.count({ where: { lead_id: id, organization_id: organizationId } }),
+    prisma.notes.count({ where: { entity_type: "lead", entity_id: id, organization_id: organizationId } }),
+    prisma.activities.count({ where: { entity_type: "lead", entity_id: id, organization_id: organizationId } }),
   ]);
 
   if (taskCount > 0) deps.push("tasks");
@@ -102,8 +108,11 @@ async function getLeadDependencies(id: ID): Promise<string[]> {
 }
 
 class LeadService {
-  async getAll(): Promise<Lead[]> {
-    const rows = await prisma.leads.findMany({ orderBy: ORDER_BY_ID });
+  async getAll(organizationId: ID): Promise<Lead[]> {
+    const rows = await prisma.leads.findMany({
+      where: { organization_id: organizationId },
+      orderBy: ORDER_BY_ID,
+    });
     return rows.map(toLead);
   }
 
@@ -113,13 +122,16 @@ class LeadService {
    * clamping rules the in-memory `paginate()` helper used.
    */
   async list(
+    organizationId: ID,
     params: Partial<PaginationParams> = {},
   ): Promise<PaginatedResult<Lead>> {
     const page = params.page ?? 1;
     const pageSize = params.pageSize ?? DEFAULT_PAGE_SIZE;
 
     const safePageSize = Math.max(1, Math.floor(pageSize) || DEFAULT_PAGE_SIZE);
-    const totalItems = await prisma.leads.count();
+    const totalItems = await prisma.leads.count({
+      where: { organization_id: organizationId },
+    });
     const totalPages =
       totalItems === 0 ? 0 : Math.ceil(totalItems / safePageSize);
     const safePage =
@@ -128,6 +140,7 @@ class LeadService {
         : Math.min(Math.max(1, Math.floor(page) || 1), totalPages);
 
     const rows = await prisma.leads.findMany({
+      where: { organization_id: organizationId },
       orderBy: ORDER_BY_ID,
       skip: (safePage - 1) * safePageSize,
       take: safePageSize,
@@ -144,22 +157,24 @@ class LeadService {
     };
   }
 
-  async getById(id: ID): Promise<Lead | null> {
-    const row = await prisma.leads.findUnique({ where: { id } });
+  async getById(organizationId: ID, id: ID): Promise<Lead | null> {
+    const row = await prisma.leads.findFirst({
+      where: { id, organization_id: organizationId },
+    });
     return row ? toLead(row) : null;
   }
 
-  async getDetails(id: ID): Promise<LeadDetails | null> {
-    const lead = await this.getById(id);
+  async getDetails(organizationId: ID, id: ID): Promise<LeadDetails | null> {
+    const lead = await this.getById(organizationId, id);
     if (!lead) return null;
 
     const [assignedUser, activities, notes, tasks, appointments] =
       await Promise.all([
         resolveAssignee(lead.assignedTo),
-        activityService.getTimeline("lead", id),
-        noteService.getForEntity("lead", id),
-        taskService.getByLeadId(id),
-        appointmentService.getByLeadId(id),
+        activityService.getTimeline(organizationId, "lead", id),
+        noteService.getForEntity(organizationId, "lead", id),
+        taskService.getByLeadId(organizationId, id),
+        appointmentService.getByLeadId(organizationId, id),
       ]);
 
     return {
@@ -172,17 +187,23 @@ class LeadService {
     };
   }
 
-  async create(data: CreateLeadInput): Promise<Lead> {
+  async create(organizationId: ID, data: CreateLeadInput): Promise<Lead> {
     const input = parseInput(CreateLeadSchema, data);
-    const assignedTo = await assertUserId(input.assignedTo);
+    const assignedTo = await assertUserId(organizationId, input.assignedTo);
     const timestamp = now();
 
+    // Deliberately NOT filtered by organizationId: `id` is a global primary
+    // key shared by every org's rows (org-002's seed users are user-101/102,
+    // continuing org-001's sequence, not restarting at user-001 — see
+    // ADR-025). Scoping this scan per-org would let two orgs generate the
+    // same id and collide on the primary key.
     const existing = await prisma.leads.findMany({ select: { id: true } });
     const id = nextId("lead", existing);
 
     const row = await prisma.leads.create({
       data: {
         id,
+        organization_id: organizationId,
         name: input.name,
         email: input.email ?? null,
         phone: input.phone,
@@ -202,14 +223,16 @@ class LeadService {
     return toLead(row);
   }
 
-  async update(id: ID, data: UpdateLeadInput): Promise<Lead | null> {
-    const previous = await this.getById(id);
+  async update(organizationId: ID, id: ID, data: UpdateLeadInput): Promise<Lead | null> {
+    const previous = await this.getById(organizationId, id);
     if (!previous) return null;
 
     const validated = parseInput(UpdateLeadSchema, data);
     if (validated.assignedTo !== undefined) {
-      validated.assignedTo = await assertUserId(validated.assignedTo);
+      validated.assignedTo = await assertUserId(organizationId, validated.assignedTo);
     }
+    // `getById` above already proved `id` belongs to `organizationId`, so a
+    // plain by-id update is safe (matches plan.md §9's suggested alternative).
     const row = await prisma.leads.update({
       where: { id },
       data: toUpdatePatch(validated),
@@ -217,7 +240,7 @@ class LeadService {
     const updated = toLead(row);
 
     if (validated.status && validated.status !== previous.status) {
-      await activityService.create({
+      await activityService.create(organizationId, {
         entityType: "lead",
         entityId: id,
         type: "status_change",
@@ -230,9 +253,9 @@ class LeadService {
     return updated;
   }
 
-  async delete(id: ID): Promise<boolean> {
-    const existing = await prisma.leads.findUnique({
-      where: { id },
+  async delete(organizationId: ID, id: ID): Promise<boolean> {
+    const existing = await prisma.leads.findFirst({
+      where: { id, organization_id: organizationId },
       select: { id: true },
     });
     if (!existing) return false;
@@ -247,7 +270,7 @@ class LeadService {
       );
     }
 
-    const deps = await getLeadDependencies(id);
+    const deps = await getLeadDependencies(organizationId, id);
     if (deps.length > 0) {
       throw conflict(`Cannot delete lead: dependent ${deps.join(", ")} exist`);
     }
@@ -260,14 +283,21 @@ class LeadService {
    * Convert a lead into a customer.
    * Idempotent if already converted and a customer exists for this lead.
    * Migrates related tasks and appointments to the customer.
+   *
+   * `organizationId` now threads through every downstream call (the
+   * Milestone 6 fix plan.md §9 calls out by name) — the created customer,
+   * migrated tasks/appointments, and the conversion activity all carry the
+   * correct `organization_id`, closing the temporary gap Milestone 5 left
+   * (see ADR-025). No transaction wrapping is added here — that remains the
+   * separate, already-tracked ADR-019/021 item, unrelated to tenant scoping.
    */
-  async convert(id: ID): Promise<ConvertLeadResult> {
-    const lead = await this.getById(id);
+  async convert(organizationId: ID, id: ID): Promise<ConvertLeadResult> {
+    const lead = await this.getById(organizationId, id);
     if (!lead) {
       throw notFound("Lead not found");
     }
 
-    const existingCustomer = await customerService.getByLeadId(id);
+    const existingCustomer = await customerService.getByLeadId(organizationId, id);
     if (lead.status === "converted" && existingCustomer) {
       return { lead, customer: existingCustomer };
     }
@@ -275,7 +305,7 @@ class LeadService {
     let customer = existingCustomer;
 
     if (!customer) {
-      customer = await customerService.create({
+      customer = await customerService.create(organizationId, {
         leadId: lead.id,
         businessName: lead.company,
         primaryContact: lead.name,
@@ -286,16 +316,16 @@ class LeadService {
       });
     }
 
-    await taskService.migrateLeadToCustomer(lead.id, customer.id);
-    await appointmentService.migrateLeadToCustomer(lead.id, customer.id);
+    await taskService.migrateLeadToCustomer(organizationId, lead.id, customer.id);
+    await appointmentService.migrateLeadToCustomer(organizationId, lead.id, customer.id);
 
     const updated =
       lead.status === "converted"
         ? lead
-        : (await this.update(id, { status: "converted" }))!;
+        : (await this.update(organizationId, id, { status: "converted" }))!;
 
     if (!existingCustomer) {
-      await activityService.create({
+      await activityService.create(organizationId, {
         entityType: "lead",
         entityId: id,
         type: "updated",
@@ -308,46 +338,46 @@ class LeadService {
     return { lead: updated, customer };
   }
 
-  async getByStatus(status: LeadStatus): Promise<Lead[]> {
+  async getByStatus(organizationId: ID, status: LeadStatus): Promise<Lead[]> {
     const rows = await prisma.leads.findMany({
-      where: { status },
+      where: { organization_id: organizationId, status },
       orderBy: ORDER_BY_ID,
     });
     return rows.map(toLead);
   }
 
-  async getByAssignee(userId: ID): Promise<Lead[]> {
+  async getByAssignee(organizationId: ID, userId: ID): Promise<Lead[]> {
     const rows = await prisma.leads.findMany({
-      where: { assigned_to: userId },
+      where: { organization_id: organizationId, assigned_to: userId },
       orderBy: ORDER_BY_ID,
     });
     return rows.map(toLead);
   }
 
-  async getBySource(source: LeadSource): Promise<Lead[]> {
+  async getBySource(organizationId: ID, source: LeadSource): Promise<Lead[]> {
     const rows = await prisma.leads.findMany({
-      where: { source },
+      where: { organization_id: organizationId, source },
       orderBy: ORDER_BY_ID,
     });
     return rows.map(toLead);
   }
 
-  async getByPriority(priority: LeadPriority): Promise<Lead[]> {
+  async getByPriority(organizationId: ID, priority: LeadPriority): Promise<Lead[]> {
     const rows = await prisma.leads.findMany({
-      where: { priority },
+      where: { organization_id: organizationId, priority },
       orderBy: ORDER_BY_ID,
     });
     return rows.map(toLead);
   }
 
-  async search(query: string): Promise<Lead[]> {
+  async search(organizationId: ID, query: string): Promise<Lead[]> {
     const q = query.trim().toLowerCase();
-    if (!q) return this.getAll();
+    if (!q) return this.getAll(organizationId);
 
     // Tags are a Postgres text[]; a substring match across joined tags can't be
     // expressed with Prisma's typed array filters, so we apply the original
     // case-insensitive substring predicate in-process to preserve behavior.
-    const all = await this.getAll();
+    const all = await this.getAll(organizationId);
     return all.filter((lead) => {
       const haystack = [
         lead.name,

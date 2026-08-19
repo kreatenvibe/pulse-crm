@@ -1,4 +1,5 @@
 import { INVOICE_STATUSES, LEAD_STATUSES } from "@/lib/schemas/enums";
+import type { ID } from "@/types/common";
 import type { DashboardSummary } from "@/types/dashboard";
 import type { InvoiceStatus } from "@/types/invoice";
 import type { LeadStatus } from "@/types/lead";
@@ -12,7 +13,7 @@ import { taskService } from "./task.service";
 export type { DashboardSummary };
 
 class DashboardService {
-  async getSummary(): Promise<DashboardSummary> {
+  async getSummary(organizationId: ID): Promise<DashboardSummary> {
     const [
       leads,
       customers,
@@ -27,18 +28,18 @@ class DashboardService {
       overdueInvoices,
       recentActivities,
     ] = await Promise.all([
-      leadService.getAll(),
-      customerService.getAll(),
-      customerService.getActive(),
-      appointmentService.getAll(),
-      appointmentService.getUpcoming(),
-      taskService.getAll(),
-      taskService.getOpen(),
-      taskService.getOverdue(),
-      invoiceService.getAll(),
-      invoiceService.getUnpaid(),
-      invoiceService.getOverdue(),
-      activityService.getRecent(20),
+      leadService.getAll(organizationId),
+      customerService.getAll(organizationId),
+      customerService.getActive(organizationId),
+      appointmentService.getAll(organizationId),
+      appointmentService.getUpcoming(organizationId),
+      taskService.getAll(organizationId),
+      taskService.getOpen(organizationId),
+      taskService.getOverdue(organizationId),
+      invoiceService.getAll(organizationId),
+      invoiceService.getUnpaid(organizationId),
+      invoiceService.getOverdue(organizationId),
+      activityService.getRecent(organizationId, 20),
     ]);
 
     const byStatus = Object.fromEntries(

@@ -35,6 +35,9 @@ export interface Lead extends BaseEntity {
 
   // Timeline
   lastContactedAt?: Date;
+
+  /** Optional until Milestone 5/6 thread org scoping through the service layer. */
+  organizationId?: ID;
 }
 
 /** Lead as returned by `/api/leads` full list (dates are ISO strings). */

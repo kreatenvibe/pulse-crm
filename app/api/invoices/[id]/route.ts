@@ -5,15 +5,17 @@ import {
   readJson,
   withApiErrors,
 } from "@/lib/api-route";
+import { requireSession } from "@/lib/session";
 import { invoiceService } from "@/services";
 
 type Params = Promise<{ id: string }>;
 
 export const GET = withApiErrors(
-  async (_request: Request, { params }: { params: Params }) => {
+  async (request: Request, { params }: { params: Params }) => {
+    const { organizationId } = await requireSession(request);
     const { id } = await params;
     const invoice = assertFound(
-      await invoiceService.getById(id),
+      await invoiceService.getById(organizationId, id),
       "Invoice not found",
     );
     return ok(invoice);
@@ -22,10 +24,11 @@ export const GET = withApiErrors(
 
 export const PATCH = withApiErrors(
   async (request: Request, { params }: { params: Params }) => {
+    const { organizationId } = await requireSession(request);
     const { id } = await params;
     const body = await readJson(request);
     const invoice = assertFound(
-      await invoiceService.update(id, body),
+      await invoiceService.update(organizationId, id, body),
       "Invoice not found",
     );
     return ok(invoice);
@@ -33,9 +36,10 @@ export const PATCH = withApiErrors(
 );
 
 export const DELETE = withApiErrors(
-  async (_request: Request, { params }: { params: Params }) => {
+  async (request: Request, { params }: { params: Params }) => {
+    const { organizationId } = await requireSession(request);
     const { id } = await params;
-    assertFound(await invoiceService.delete(id), "Invoice not found");
+    assertFound(await invoiceService.delete(organizationId, id), "Invoice not found");
     return noContent();
   },
 );

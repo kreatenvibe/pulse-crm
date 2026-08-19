@@ -15,6 +15,9 @@ export interface Appointment extends BaseEntity {
 
   assignedTo: ID;
   notes?: string;
+
+  /** Optional until Milestone 5/6 thread org scoping through the service layer. */
+  organizationId?: ID;
 }
 
 /** Appointment as returned by API JSON (dates are ISO strings). */

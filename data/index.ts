@@ -1,3 +1,4 @@
+export { organizations } from "./organizations";
 export { users } from "./users";
 export { leads } from "./leads";
 export { customers } from "./customers";

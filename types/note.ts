@@ -6,6 +6,9 @@ export interface Note extends BaseEntity {
 
   content: string;
   createdBy: ID;
+
+  /** Optional until Milestone 5/6 thread org scoping through the service layer. */
+  organizationId?: ID;
 }
 
 /** Note as returned by API JSON (dates are ISO strings). */

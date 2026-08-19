@@ -7,6 +7,32 @@ datasource db {
   provider = "postgresql"
 }
 
+model organizations {
+  id           String         @id
+  name         String
+  created_at   DateTime       @default(now()) @db.Timestamptz(6)
+  updated_at   DateTime       @default(now()) @db.Timestamptz(6)
+  users        users[]
+  leads        leads[]
+  customers    customers[]
+  appointments appointments[]
+  tasks        tasks[]
+  services     services[]
+  invoices     invoices[]
+  activities   activities[]
+  notes        notes[]
+}
+
+model sessions {
+  id         String   @id
+  user_id    String
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+  expires_at DateTime @db.Timestamptz(6)
+  user       users    @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: Restrict)
+
+  @@index([user_id])
+}
+
 model users {
   id                    String         @id
   name                  String
@@ -14,14 +40,20 @@ model users {
   avatar                String?
   role                  String
   is_active             Boolean
+  organization_id       String?
+  password_hash         String?
   created_at            DateTime       @default(now()) @db.Timestamptz(6)
   updated_at            DateTime       @default(now()) @db.Timestamptz(6)
+  organization          organizations? @relation(fields: [organization_id], references: [id], onUpdate: Restrict)
+  sessions              sessions[]
   performed_activities  activities[]
   assigned_appointments appointments[]
   assigned_customers    customers[]
   assigned_leads        leads[]
   authored_notes        notes[]
   assigned_tasks        tasks[]
+
+  @@index([organization_id])
 }
 
 model leads {
@@ -38,14 +70,17 @@ model leads {
   message           String?
   tags              String[]       @default([])
   assigned_to       String
+  organization_id   String?
   last_contacted_at DateTime?      @db.Timestamptz(6)
   appointments      appointments[]
   customer          customers?
   assignee          users          @relation(fields: [assigned_to], references: [id], onUpdate: Restrict)
+  organization      organizations? @relation(fields: [organization_id], references: [id], onUpdate: Restrict)
   tasks             tasks[]
 
   @@index([assigned_to])
   @@index([status])
+  @@index([organization_id, status])
 }
 
 model customers {
@@ -57,121 +92,142 @@ model customers {
   email            String?
   address          String?
   assigned_to      String
+  organization_id  String?
   lifecycle_status String
   created_at       DateTime       @default(now()) @db.Timestamptz(6)
   updated_at       DateTime       @default(now()) @db.Timestamptz(6)
   appointments     appointments[]
   assignee         users          @relation(fields: [assigned_to], references: [id], onUpdate: Restrict)
   lead             leads          @relation(fields: [lead_id], references: [id], onUpdate: Restrict)
+  organization     organizations? @relation(fields: [organization_id], references: [id], onUpdate: Restrict)
   invoices         invoices[]
   services         services[]
   tasks            tasks[]
 
   @@index([assigned_to])
+  @@index([organization_id])
 }
 
 model appointments {
-  id          String     @id
-  lead_id     String?
-  customer_id String?
-  title       String
-  starts_at   DateTime   @db.Timestamptz(6)
-  ends_at     DateTime   @db.Timestamptz(6)
-  status      String
-  assigned_to String
-  notes       String?
-  created_at  DateTime   @default(now()) @db.Timestamptz(6)
-  updated_at  DateTime   @default(now()) @db.Timestamptz(6)
-  assignee    users      @relation(fields: [assigned_to], references: [id], onUpdate: Restrict)
-  customer    customers? @relation(fields: [customer_id], references: [id], onDelete: Restrict, onUpdate: Restrict)
-  lead        leads?     @relation(fields: [lead_id], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  id              String         @id
+  lead_id         String?
+  customer_id     String?
+  title           String
+  starts_at       DateTime       @db.Timestamptz(6)
+  ends_at         DateTime       @db.Timestamptz(6)
+  status          String
+  assigned_to     String
+  organization_id String?
+  notes           String?
+  created_at      DateTime       @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime       @default(now()) @db.Timestamptz(6)
+  assignee        users          @relation(fields: [assigned_to], references: [id], onUpdate: Restrict)
+  customer        customers?     @relation(fields: [customer_id], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  lead            leads?         @relation(fields: [lead_id], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  organization    organizations? @relation(fields: [organization_id], references: [id], onUpdate: Restrict)
 
   @@index([lead_id])
   @@index([customer_id])
   @@index([assigned_to])
+  @@index([organization_id])
 }
 
 model tasks {
-  id          String     @id
-  title       String
-  description String?
-  assigned_to String
-  lead_id     String?
-  customer_id String?
-  due_date    DateTime   @db.Timestamptz(6)
-  priority    String
-  status      String
-  created_at  DateTime   @default(now()) @db.Timestamptz(6)
-  updated_at  DateTime   @default(now()) @db.Timestamptz(6)
-  assignee    users      @relation(fields: [assigned_to], references: [id], onUpdate: Restrict)
-  customer    customers? @relation(fields: [customer_id], references: [id], onDelete: Restrict, onUpdate: Restrict)
-  lead        leads?     @relation(fields: [lead_id], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  id              String         @id
+  title           String
+  description     String?
+  assigned_to     String
+  lead_id         String?
+  customer_id     String?
+  due_date        DateTime       @db.Timestamptz(6)
+  priority        String
+  status          String
+  organization_id String?
+  created_at      DateTime       @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime       @default(now()) @db.Timestamptz(6)
+  assignee        users          @relation(fields: [assigned_to], references: [id], onUpdate: Restrict)
+  customer        customers?     @relation(fields: [customer_id], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  lead            leads?         @relation(fields: [lead_id], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  organization    organizations? @relation(fields: [organization_id], references: [id], onUpdate: Restrict)
 
   @@index([assigned_to])
   @@index([lead_id])
   @@index([customer_id])
+  @@index([organization_id])
 }
 
 model services {
-  id             String     @id
-  customer_id    String
-  title          String
-  description    String?
-  status         String
-  scheduled_date DateTime?  @db.Timestamptz(6)
-  created_at     DateTime   @default(now()) @db.Timestamptz(6)
-  updated_at     DateTime   @default(now()) @db.Timestamptz(6)
-  invoices       invoices[]
-  customer       customers  @relation(fields: [customer_id], references: [id], onUpdate: Restrict)
+  id              String         @id
+  customer_id     String
+  title           String
+  description     String?
+  status          String
+  organization_id String?
+  scheduled_date  DateTime?      @db.Timestamptz(6)
+  created_at      DateTime       @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime       @default(now()) @db.Timestamptz(6)
+  invoices        invoices[]
+  customer        customers      @relation(fields: [customer_id], references: [id], onUpdate: Restrict)
+  organization    organizations? @relation(fields: [organization_id], references: [id], onUpdate: Restrict)
 
   @@index([customer_id])
+  @@index([organization_id])
 }
 
 model invoices {
-  id             String    @id
-  customer_id    String
-  service_id     String?
-  amount_cents   BigInt
-  currency       String
-  invoice_number String    @unique
-  status         String
-  issued_at      DateTime  @db.Timestamptz(6)
-  due_date       DateTime  @db.Timestamptz(6)
-  created_at     DateTime  @default(now()) @db.Timestamptz(6)
-  updated_at     DateTime  @default(now()) @db.Timestamptz(6)
-  customer       customers @relation(fields: [customer_id], references: [id], onUpdate: Restrict)
-  service        services? @relation(fields: [service_id], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  id              String         @id
+  customer_id     String
+  service_id      String?
+  amount_cents    BigInt
+  currency        String
+  invoice_number  String
+  status          String
+  organization_id String?
+  issued_at       DateTime       @db.Timestamptz(6)
+  due_date        DateTime       @db.Timestamptz(6)
+  created_at      DateTime       @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime       @default(now()) @db.Timestamptz(6)
+  customer        customers      @relation(fields: [customer_id], references: [id], onUpdate: Restrict)
+  service         services?      @relation(fields: [service_id], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  organization    organizations? @relation(fields: [organization_id], references: [id], onUpdate: Restrict)
 
+  @@unique([organization_id, invoice_number])
   @@index([customer_id])
   @@index([service_id])
 }
 
 model activities {
-  id           String   @id
-  entity_type  String
-  entity_id    String
-  type         String
-  description  String
-  performed_by String
-  occurred_at  DateTime @db.Timestamptz(6)
-  created_at   DateTime @default(now()) @db.Timestamptz(6)
-  updated_at   DateTime @default(now()) @db.Timestamptz(6)
-  performer    users    @relation(fields: [performed_by], references: [id], onUpdate: Restrict)
+  id              String         @id
+  entity_type     String
+  entity_id       String
+  type            String
+  description     String
+  performed_by    String
+  organization_id String?
+  occurred_at     DateTime       @db.Timestamptz(6)
+  created_at      DateTime       @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime       @default(now()) @db.Timestamptz(6)
+  performer       users          @relation(fields: [performed_by], references: [id], onUpdate: Restrict)
+  organization    organizations? @relation(fields: [organization_id], references: [id], onUpdate: Restrict)
 
   @@index([performed_by])
   @@index([entity_type, entity_id], map: "activities_entity_idx")
+  @@index([organization_id])
 }
 
 model notes {
-  id          String   @id
-  entity_type String
-  entity_id   String
-  content     String
-  created_by  String
-  created_at  DateTime @default(now()) @db.Timestamptz(6)
-  updated_at  DateTime @default(now()) @db.Timestamptz(6)
-  author      users    @relation(fields: [created_by], references: [id], onUpdate: Restrict)
+  id              String         @id
+  entity_type     String
+  entity_id       String
+  content         String
+  created_by      String
+  organization_id String?
+  created_at      DateTime       @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime       @default(now()) @db.Timestamptz(6)
+  author          users          @relation(fields: [created_by], references: [id], onUpdate: Restrict)
+  organization    organizations? @relation(fields: [organization_id], references: [id], onUpdate: Restrict)
 
   @@index([created_by])
   @@index([entity_type, entity_id], map: "notes_entity_idx")
+  @@index([organization_id])
 }

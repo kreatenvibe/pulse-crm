@@ -5,24 +5,27 @@ import {
   readJson,
   withApiErrors,
 } from "@/lib/api-route";
+import { requireSession } from "@/lib/session";
 import { noteService } from "@/services";
 
 type Params = Promise<{ id: string }>;
 
 export const GET = withApiErrors(
-  async (_request: Request, { params }: { params: Params }) => {
+  async (request: Request, { params }: { params: Params }) => {
+    const { organizationId } = await requireSession(request);
     const { id } = await params;
-    const note = assertFound(await noteService.getById(id), "Note not found");
+    const note = assertFound(await noteService.getById(organizationId, id), "Note not found");
     return ok(note);
   },
 );
 
 export const PATCH = withApiErrors(
   async (request: Request, { params }: { params: Params }) => {
+    const { organizationId } = await requireSession(request);
     const { id } = await params;
     const body = await readJson(request);
     const note = assertFound(
-      await noteService.update(id, body),
+      await noteService.update(organizationId, id, body),
       "Note not found",
     );
     return ok(note);
@@ -30,9 +33,10 @@ export const PATCH = withApiErrors(
 );
 
 export const DELETE = withApiErrors(
-  async (_request: Request, { params }: { params: Params }) => {
+  async (request: Request, { params }: { params: Params }) => {
+    const { organizationId } = await requireSession(request);
     const { id } = await params;
-    assertFound(await noteService.delete(id), "Note not found");
+    assertFound(await noteService.delete(organizationId, id), "Note not found");
     return noContent();
   },
 );

@@ -14,6 +14,9 @@ export interface Activity extends BaseEntity {
 
   performedBy: ID;
   timestamp: Date;
+
+  /** Optional until Milestone 5/6 thread org scoping through the service layer. */
+  organizationId?: ID;
 }
 
 /** Activity as returned by API JSON (dates are ISO strings). */

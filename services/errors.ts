@@ -5,9 +5,9 @@
  * (`lib/api-route.ts`) maps each code to an HTTP status and a deterministic
  * response body. Nothing here knows about HTTP.
  *
- * `UNAUTHORIZED` / `FORBIDDEN` are part of the taxonomy for a future
- * authenticated fork. The current app never throws them, but the boundary can
- * already represent them.
+ * `UNAUTHORIZED` is thrown by `services/auth.service.ts` (invalid credentials,
+ * invalid/expired session). `FORBIDDEN` remains reserved for a future RBAC
+ * milestone — nothing throws it yet.
  */
 export type ErrorCode =
   | "VALIDATION"
@@ -43,6 +43,10 @@ export function notFound(message: string, details?: ErrorDetails): ServiceError 
 
 export function conflict(message: string, details?: ErrorDetails): ServiceError {
   return new ServiceError(message, "CONFLICT", details);
+}
+
+export function unauthorized(message: string, details?: ErrorDetails): ServiceError {
+  return new ServiceError(message, "UNAUTHORIZED", details);
 }
 
 export function validation(

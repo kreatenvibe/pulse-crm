@@ -50,28 +50,36 @@ function toUpdatePatch(
 }
 
 class ActivityService {
-  async getAll(): Promise<Activity[]> {
-    const rows = await prisma.activities.findMany({ orderBy: ORDER_BY_ID });
+  async getAll(organizationId: ID): Promise<Activity[]> {
+    const rows = await prisma.activities.findMany({
+      where: { organization_id: organizationId },
+      orderBy: ORDER_BY_ID,
+    });
     return rows.map(toActivity);
   }
 
-  async getById(id: ID): Promise<Activity | null> {
-    const row = await prisma.activities.findUnique({ where: { id } });
+  async getById(organizationId: ID, id: ID): Promise<Activity | null> {
+    const row = await prisma.activities.findFirst({
+      where: { id, organization_id: organizationId },
+    });
     return row ? toActivity(row) : null;
   }
 
-  async create(data: CreateActivityInput): Promise<Activity> {
+  async create(organizationId: ID, data: CreateActivityInput): Promise<Activity> {
     const input = parseInput(CreateActivitySchema, data);
-    await assertEntityReference(input.entityType, input.entityId);
-    const performedBy = await assertUserId(input.performedBy, "performedBy");
+    await assertEntityReference(organizationId, input.entityType, input.entityId);
+    const performedBy = await assertUserId(organizationId, input.performedBy, "performedBy");
     const timestamp = now();
 
+    // Deliberately NOT filtered by organizationId — `id` is a global primary
+    // key (see lead.service.ts's `create` for the full rationale).
     const existing = await prisma.activities.findMany({ select: { id: true } });
     const id = nextId("act", existing);
 
     const row = await prisma.activities.create({
       data: {
         id,
+        organization_id: organizationId,
         entity_type: input.entityType,
         entity_id: input.entityId,
         type: input.type,
@@ -86,16 +94,17 @@ class ActivityService {
     return toActivity(row);
   }
 
-  async update(id: ID, data: UpdateActivityInput): Promise<Activity | null> {
-    const previous = await this.getById(id);
+  async update(organizationId: ID, id: ID, data: UpdateActivityInput): Promise<Activity | null> {
+    const previous = await this.getById(organizationId, id);
     if (!previous) return null;
 
     const validated = parseInput(UpdateActivitySchema, data);
     if (validated.entityType !== undefined && validated.entityId !== undefined) {
-      await assertEntityReference(validated.entityType, validated.entityId);
+      await assertEntityReference(organizationId, validated.entityType, validated.entityId);
     }
     if (validated.performedBy !== undefined) {
       validated.performedBy = await assertUserId(
+        organizationId,
         validated.performedBy,
         "performedBy",
       );
@@ -108,9 +117,9 @@ class ActivityService {
     return toActivity(row);
   }
 
-  async delete(id: ID): Promise<boolean> {
-    const existing = await prisma.activities.findUnique({
-      where: { id },
+  async delete(organizationId: ID, id: ID): Promise<boolean> {
+    const existing = await prisma.activities.findFirst({
+      where: { id, organization_id: organizationId },
       select: { id: true },
     });
     if (!existing) return false;
@@ -119,17 +128,17 @@ class ActivityService {
     return true;
   }
 
-  async getByType(type: ActivityType): Promise<Activity[]> {
+  async getByType(organizationId: ID, type: ActivityType): Promise<Activity[]> {
     const rows = await prisma.activities.findMany({
-      where: { type },
+      where: { organization_id: organizationId, type },
       orderBy: ORDER_BY_ID,
     });
     return rows.map(toActivity);
   }
 
-  async getByPerformer(userId: ID): Promise<Activity[]> {
+  async getByPerformer(organizationId: ID, userId: ID): Promise<Activity[]> {
     const rows = await prisma.activities.findMany({
-      where: { performed_by: userId },
+      where: { organization_id: organizationId, performed_by: userId },
       orderBy: ORDER_BY_ID,
     });
     return rows.map(toActivity);
@@ -137,18 +146,20 @@ class ActivityService {
 
   /** Timeline for one entity, newest first. */
   async getTimeline(
+    organizationId: ID,
     entityType: EntityType,
     entityId: ID,
   ): Promise<Activity[]> {
     const rows = await prisma.activities.findMany({
-      where: { entity_type: entityType, entity_id: entityId },
+      where: { organization_id: organizationId, entity_type: entityType, entity_id: entityId },
       orderBy: { occurred_at: "desc" },
     });
     return rows.map(toActivity);
   }
 
-  async getRecent(limit = 20): Promise<Activity[]> {
+  async getRecent(organizationId: ID, limit = 20): Promise<Activity[]> {
     const rows = await prisma.activities.findMany({
+      where: { organization_id: organizationId },
       orderBy: { occurred_at: "desc" },
       take: limit,
     });

@@ -4,6 +4,7 @@ import {
   LEAD_SOURCES,
   LEAD_STATUSES,
 } from "@/lib/schemas/enums";
+import type { ID } from "@/types/common";
 import type { InvoiceStatus } from "@/types/invoice";
 import type { ReportSummary } from "@/types/report";
 import { appointmentService } from "./appointment.service";
@@ -37,13 +38,13 @@ function sumAmountCents(
 }
 
 class ReportService {
-  async getSummary(): Promise<ReportSummary> {
+  async getSummary(organizationId: ID): Promise<ReportSummary> {
     const [leads, appointments, tasks, openTasks, invoices] = await Promise.all([
-      leadService.getAll(),
-      appointmentService.getAll(),
-      taskService.getAll(),
-      taskService.getOpen(),
-      invoiceService.getAll(),
+      leadService.getAll(organizationId),
+      appointmentService.getAll(organizationId),
+      taskService.getAll(organizationId),
+      taskService.getOpen(organizationId),
+      invoiceService.getAll(organizationId),
     ]);
 
     const converted = leads.filter((lead) => lead.status === "converted").length;

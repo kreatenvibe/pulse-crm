@@ -62,29 +62,37 @@ function toUpdatePatch(
 }
 
 class TaskService {
-  async getAll(): Promise<Task[]> {
-    const rows = await prisma.tasks.findMany({ orderBy: ORDER_BY_ID });
+  async getAll(organizationId: ID): Promise<Task[]> {
+    const rows = await prisma.tasks.findMany({
+      where: { organization_id: organizationId },
+      orderBy: ORDER_BY_ID,
+    });
     return rows.map(toTask);
   }
 
-  async getById(id: ID): Promise<Task | null> {
-    const row = await prisma.tasks.findUnique({ where: { id } });
+  async getById(organizationId: ID, id: ID): Promise<Task | null> {
+    const row = await prisma.tasks.findFirst({
+      where: { id, organization_id: organizationId },
+    });
     return row ? toTask(row) : null;
   }
 
-  async create(data: CreateTaskInput): Promise<Task> {
+  async create(organizationId: ID, data: CreateTaskInput): Promise<Task> {
     const input = parseInput(CreateTaskSchema, data);
     // Exactly-one-of + existence for leadId/customerId (DB-backed).
-    const link = await assertLeadCustomerXor(input.leadId, input.customerId);
-    const assignedTo = await assertUserId(input.assignedTo);
+    const link = await assertLeadCustomerXor(organizationId, input.leadId, input.customerId);
+    const assignedTo = await assertUserId(organizationId, input.assignedTo);
     const timestamp = now();
 
+    // Deliberately NOT filtered by organizationId — `id` is a global primary
+    // key (see lead.service.ts's `create` for the full rationale).
     const existing = await prisma.tasks.findMany({ select: { id: true } });
     const id = nextId("task", existing);
 
     const row = await prisma.tasks.create({
       data: {
         id,
+        organization_id: organizationId,
         title: input.title,
         description: input.description ?? null,
         assigned_to: assignedTo,
@@ -101,13 +109,13 @@ class TaskService {
     return toTask(row);
   }
 
-  async update(id: ID, data: UpdateTaskInput): Promise<Task | null> {
-    const existing = await this.getById(id);
+  async update(organizationId: ID, id: ID, data: UpdateTaskInput): Promise<Task | null> {
+    const existing = await this.getById(organizationId, id);
     if (!existing) return null;
 
     const validated = parseInput(UpdateTaskSchema, data);
     if (validated.assignedTo !== undefined) {
-      validated.assignedTo = await assertUserId(validated.assignedTo);
+      validated.assignedTo = await assertUserId(organizationId, validated.assignedTo);
     }
     // Re-resolve the lead/customer link (shape + existence, with the existing
     // record as fallback) whenever either side is referenced in the patch.
@@ -118,6 +126,7 @@ class TaskService {
       validated.customerId !== undefined
     ) {
       const link = await resolveLeadCustomerLink(
+        organizationId,
         { leadId: validated.leadId, customerId: validated.customerId },
         existing,
       );
@@ -131,9 +140,9 @@ class TaskService {
     return toTask(row);
   }
 
-  async delete(id: ID): Promise<boolean> {
-    const existing = await prisma.tasks.findUnique({
-      where: { id },
+  async delete(organizationId: ID, id: ID): Promise<boolean> {
+    const existing = await prisma.tasks.findFirst({
+      where: { id, organization_id: organizationId },
       select: { id: true },
     });
     if (!existing) return false;
@@ -142,59 +151,60 @@ class TaskService {
     return true;
   }
 
-  async getByStatus(status: TaskStatus): Promise<Task[]> {
+  async getByStatus(organizationId: ID, status: TaskStatus): Promise<Task[]> {
     const rows = await prisma.tasks.findMany({
-      where: { status },
+      where: { organization_id: organizationId, status },
       orderBy: ORDER_BY_ID,
     });
     return rows.map(toTask);
   }
 
-  async getByPriority(priority: TaskPriority): Promise<Task[]> {
+  async getByPriority(organizationId: ID, priority: TaskPriority): Promise<Task[]> {
     const rows = await prisma.tasks.findMany({
-      where: { priority },
+      where: { organization_id: organizationId, priority },
       orderBy: ORDER_BY_ID,
     });
     return rows.map(toTask);
   }
 
-  async getByAssignee(userId: ID): Promise<Task[]> {
+  async getByAssignee(organizationId: ID, userId: ID): Promise<Task[]> {
     const rows = await prisma.tasks.findMany({
-      where: { assigned_to: userId },
+      where: { organization_id: organizationId, assigned_to: userId },
       orderBy: ORDER_BY_ID,
     });
     return rows.map(toTask);
   }
 
-  async getByLeadId(leadId: ID): Promise<Task[]> {
+  async getByLeadId(organizationId: ID, leadId: ID): Promise<Task[]> {
     const rows = await prisma.tasks.findMany({
-      where: { lead_id: leadId },
+      where: { organization_id: organizationId, lead_id: leadId },
       orderBy: ORDER_BY_ID,
     });
     return rows.map(toTask);
   }
 
-  async getByCustomerId(customerId: ID): Promise<Task[]> {
+  async getByCustomerId(organizationId: ID, customerId: ID): Promise<Task[]> {
     const rows = await prisma.tasks.findMany({
-      where: { customer_id: customerId },
+      where: { organization_id: organizationId, customer_id: customerId },
       orderBy: ORDER_BY_ID,
     });
     return rows.map(toTask);
   }
 
   /** Reassign open lead tasks to a customer after conversion. */
-  async migrateLeadToCustomer(leadId: ID, customerId: ID): Promise<number> {
+  async migrateLeadToCustomer(organizationId: ID, leadId: ID, customerId: ID): Promise<number> {
     const result = await prisma.tasks.updateMany({
-      where: { lead_id: leadId },
+      where: { lead_id: leadId, organization_id: organizationId },
       data: { lead_id: null, customer_id: customerId, updated_at: now() },
     });
     return result.count;
   }
 
   /** Open tasks past their due date. */
-  async getOverdue(asOf: Date = now()): Promise<Task[]> {
+  async getOverdue(organizationId: ID, asOf: Date = now()): Promise<Task[]> {
     const rows = await prisma.tasks.findMany({
       where: {
+        organization_id: organizationId,
         due_date: { lt: asOf },
         status: { notIn: ["done", "cancelled"] },
       },
@@ -203,9 +213,9 @@ class TaskService {
     return rows.map(toTask);
   }
 
-  async getOpen(): Promise<Task[]> {
+  async getOpen(organizationId: ID): Promise<Task[]> {
     const rows = await prisma.tasks.findMany({
-      where: { status: { in: ["todo", "in_progress"] } },
+      where: { organization_id: organizationId, status: { in: ["todo", "in_progress"] } },
       orderBy: ORDER_BY_ID,
     });
     return rows.map(toTask);

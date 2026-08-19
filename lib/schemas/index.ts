@@ -7,3 +7,4 @@ export * from "./service.schema";
 export * from "./invoice.schema";
 export * from "./activity.schema";
 export * from "./note.schema";
+export * from "./auth.schema";

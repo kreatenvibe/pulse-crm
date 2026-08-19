@@ -24,6 +24,8 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
+import { useCurrentUser } from "@/hooks";
+import { api } from "@/lib/api";
 import {
   isNavItemActive,
   mainNavItems,
@@ -31,6 +33,15 @@ import {
   settingsNavItem,
   type NavItem,
 } from "./navigation";
+
+/** POSTs the logout endpoint, then hard-redirects so no stale session state lingers client-side. */
+async function logout() {
+  try {
+    await api.post("/api/auth/logout");
+  } finally {
+    window.location.href = "/login";
+  }
+}
 
 type AppShellProps = {
   children: ReactNode;
@@ -112,13 +123,14 @@ function NavLinks({
             <HelpCircle className="size-5 shrink-0 stroke-[1.5]" aria-hidden />
             Help
           </a>
-          <a
-            href="#"
-            className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-secondary transition-colors hover:bg-surface-container-low hover:text-on-surface"
+          <button
+            type="button"
+            onClick={() => void logout()}
+            className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-secondary transition-colors hover:bg-surface-container-low hover:text-on-surface"
           >
             <LogOut className="size-5 shrink-0 stroke-[1.5]" aria-hidden />
             Logout
-          </a>
+          </button>
         </div>
       </div>
     </>
@@ -156,6 +168,68 @@ function Breadcrumbs({ pathname }: { pathname: string }) {
         <>
           <ChevronRight className="size-4 shrink-0" aria-hidden />
           <span className="text-on-surface">{current.label}</span>
+        </>
+      ) : null}
+    </div>
+  );
+}
+
+/** Initials from a display name, e.g. "John Doe" -> "JD". Falls back to the first letter. */
+function initials(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "?";
+  if (parts.length === 1) return parts[0][0].toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
+
+/** Avatar button anchoring a small dropdown with the current user's identity and logout. */
+function UserMenu() {
+  const { data: user } = useCurrentUser();
+  const [open, setOpen] = useState(false);
+
+  return (
+    <div className="relative">
+      <button
+        type="button"
+        className="flex size-7 items-center justify-center rounded-full bg-secondary-container text-on-surface transition-colors hover:bg-brand-soft"
+        aria-label="Account menu"
+        aria-expanded={open}
+        onClick={() => setOpen((value) => !value)}
+      >
+        {user ? (
+          <span className="text-xs font-semibold">{initials(user.name)}</span>
+        ) : (
+          <UserRound className="size-4 stroke-[1.5]" />
+        )}
+      </button>
+
+      {open ? (
+        <>
+          <button
+            type="button"
+            className="fixed inset-0 z-40 cursor-default"
+            aria-label="Close account menu"
+            tabIndex={-1}
+            onClick={() => setOpen(false)}
+          />
+          <div className="absolute right-0 z-50 mt-2 w-56 rounded-lg border border-outline-variant bg-surface p-1 shadow-soft">
+            {user ? (
+              <div className="border-b border-outline-variant px-3 py-2">
+                <p className="truncate text-sm font-medium text-on-surface">
+                  {user.name}
+                </p>
+                <p className="truncate text-xs text-secondary">{user.email}</p>
+              </div>
+            ) : null}
+            <button
+              type="button"
+              onClick={() => void logout()}
+              className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm text-secondary transition-colors hover:bg-surface-container-low hover:text-on-surface"
+            >
+              <LogOut className="size-4 shrink-0 stroke-[1.5]" aria-hidden />
+              Logout
+            </button>
+          </div>
         </>
       ) : null}
     </div>
@@ -260,12 +334,7 @@ export function AppShell({ children }: AppShellProps) {
             >
               <History className="size-5 stroke-[1.5]" aria-hidden />
             </button>
-            <span
-              className="flex size-7 items-center justify-center rounded-full bg-secondary-container text-on-surface"
-              aria-hidden
-            >
-              <UserRound className="size-4 stroke-[1.5]" />
-            </span>
+            <UserMenu />
           </div>
         </header>
 

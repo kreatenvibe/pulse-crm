@@ -1,5 +1,6 @@
 export { useAppointment } from "./useAppointment";
 export { useAppointments } from "./useAppointments";
+export { useCurrentUser } from "./useCurrentUser";
 export { useCustomerDetails } from "./useCustomerDetails";
 export { useCustomers } from "./useCustomers";
 export { useDashboard } from "./useDashboard";

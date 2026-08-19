@@ -3,6 +3,11 @@ import { customers } from "./customers";
 import { services } from "./services";
 import { d, pad } from "./helpers";
 
+// Scoped so the org-001 generative block below can never wrap around into
+// the org-002 fixtures appended to the shared `customers`/`services` arrays.
+const org1Customers = customers.filter((c) => c.organizationId === "org-001");
+const org1Services = services.filter((s) => s.organizationId === "org-001");
+
 const STATUSES: InvoiceStatus[] = [
   "draft",
   "sent",
@@ -29,12 +34,12 @@ const AMOUNTS_CENTS = [
   999000,
 ] as const;
 
-export const invoices: Invoice[] = Array.from({ length: 15 }, (_, i) => {
+const org1Invoices: Invoice[] = Array.from({ length: 15 }, (_, i) => {
   const index = i + 1;
-  const customer = customers[i % customers.length];
+  const customer = org1Customers[i % org1Customers.length];
   // Link most invoices to a service for the same customer when possible
   const matchingService =
-    services.find((s) => s.customerId === customer.id) ?? services[i];
+    org1Services.find((s) => s.customerId === customer.id) ?? org1Services[i];
   const hasService = i % 5 !== 4;
   const month = 3 + (i % 5);
   const day = 5 + ((i * 2) % 20);
@@ -53,6 +58,7 @@ export const invoices: Invoice[] = Array.from({ length: 15 }, (_, i) => {
     currency: "INR",
     invoiceNumber: `INV-2026-${pad(index)}`,
     status: STATUSES[i % STATUSES.length],
+    organizationId: "org-001" as const,
     issuedAt,
     dueDate,
     createdAt: issuedAt,
@@ -61,3 +67,27 @@ export const invoices: Invoice[] = Array.from({ length: 15 }, (_, i) => {
     ),
   };
 });
+
+// --- org-002 fixtures ("Acme Field Services") — small, hand-authored, isolation-testing only. ---
+// Deliberately reuses invoice number "INV-2026-001" (already used by org-001's
+// inv-001) to prove the per-organization uniqueness constraint from Milestone 1
+// (`@@unique([organization_id, invoice_number])`) accepts it once services
+// actually write organization_id (global uniqueness would have rejected this).
+const org2Invoices: Invoice[] = [
+  {
+    id: "inv-101",
+    customerId: "cust-101",
+    serviceId: "svc-101",
+    amountCents: 2499000,
+    currency: "INR",
+    invoiceNumber: "INV-2026-001",
+    status: "sent",
+    organizationId: "org-002",
+    issuedAt: d("2025-09-16T10:00:00+05:30"),
+    dueDate: d("2025-09-30T23:59:00+05:30"),
+    createdAt: d("2025-09-16T10:00:00+05:30"),
+    updatedAt: d("2025-09-16T10:00:00+05:30"),
+  },
+];
+
+export const invoices: Invoice[] = [...org1Invoices, ...org2Invoices];

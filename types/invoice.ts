@@ -14,6 +14,9 @@ export interface Invoice extends BaseEntity {
   status: InvoiceStatus;
   issuedAt: Date;
   dueDate: Date;
+
+  /** Optional until Milestone 5/6 thread org scoping through the service layer. */
+  organizationId?: ID;
 }
 
 /** Invoice as returned by API (dates are ISO strings). */

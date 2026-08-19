@@ -52,27 +52,35 @@ function toUpdatePatch(
 }
 
 class ServiceService {
-  async getAll(): Promise<Service[]> {
-    const rows = await prisma.services.findMany({ orderBy: ORDER_BY_ID });
+  async getAll(organizationId: ID): Promise<Service[]> {
+    const rows = await prisma.services.findMany({
+      where: { organization_id: organizationId },
+      orderBy: ORDER_BY_ID,
+    });
     return rows.map(toService);
   }
 
-  async getById(id: ID): Promise<Service | null> {
-    const row = await prisma.services.findUnique({ where: { id } });
+  async getById(organizationId: ID, id: ID): Promise<Service | null> {
+    const row = await prisma.services.findFirst({
+      where: { id, organization_id: organizationId },
+    });
     return row ? toService(row) : null;
   }
 
-  async create(data: CreateServiceInput): Promise<Service> {
+  async create(organizationId: ID, data: CreateServiceInput): Promise<Service> {
     const input = parseInput(CreateServiceSchema, data);
-    const customerId = await assertCustomerId(input.customerId);
+    const customerId = await assertCustomerId(organizationId, input.customerId);
     const timestamp = now();
 
+    // Deliberately NOT filtered by organizationId — `id` is a global primary
+    // key (see lead.service.ts's `create` for the full rationale).
     const existing = await prisma.services.findMany({ select: { id: true } });
     const id = nextId("svc", existing);
 
     const row = await prisma.services.create({
       data: {
         id,
+        organization_id: organizationId,
         customer_id: customerId,
         title: input.title,
         description: input.description ?? null,
@@ -86,13 +94,13 @@ class ServiceService {
     return toService(row);
   }
 
-  async update(id: ID, data: UpdateServiceInput): Promise<Service | null> {
-    const previous = await this.getById(id);
+  async update(organizationId: ID, id: ID, data: UpdateServiceInput): Promise<Service | null> {
+    const previous = await this.getById(organizationId, id);
     if (!previous) return null;
 
     const validated = parseInput(UpdateServiceSchema, data);
     if (validated.customerId !== undefined) {
-      validated.customerId = await assertCustomerId(validated.customerId);
+      validated.customerId = await assertCustomerId(organizationId, validated.customerId);
     }
     const row = await prisma.services.update({
       where: { id },
@@ -102,9 +110,9 @@ class ServiceService {
     return toService(row);
   }
 
-  async delete(id: ID): Promise<boolean> {
-    const existing = await prisma.services.findUnique({
-      where: { id },
+  async delete(organizationId: ID, id: ID): Promise<boolean> {
+    const existing = await prisma.services.findFirst({
+      where: { id, organization_id: organizationId },
       select: { id: true },
     });
     if (!existing) return false;
@@ -113,25 +121,25 @@ class ServiceService {
     return true;
   }
 
-  async getByCustomerId(customerId: ID): Promise<Service[]> {
+  async getByCustomerId(organizationId: ID, customerId: ID): Promise<Service[]> {
     const rows = await prisma.services.findMany({
-      where: { customer_id: customerId },
+      where: { organization_id: organizationId, customer_id: customerId },
       orderBy: ORDER_BY_ID,
     });
     return rows.map(toService);
   }
 
-  async getByStatus(status: ServiceStatus): Promise<Service[]> {
+  async getByStatus(organizationId: ID, status: ServiceStatus): Promise<Service[]> {
     const rows = await prisma.services.findMany({
-      where: { status },
+      where: { organization_id: organizationId, status },
       orderBy: ORDER_BY_ID,
     });
     return rows.map(toService);
   }
 
-  async getActive(): Promise<Service[]> {
+  async getActive(organizationId: ID): Promise<Service[]> {
     const rows = await prisma.services.findMany({
-      where: { status: { in: ["planned", "in_progress"] } },
+      where: { organization_id: organizationId, status: { in: ["planned", "in_progress"] } },
       orderBy: ORDER_BY_ID,
     });
     return rows.map(toService);

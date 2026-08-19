@@ -2,6 +2,12 @@ import type { Service, ServiceStatus } from "@/types/service";
 import { customers } from "./customers";
 import { d, pad } from "./helpers";
 
+// Scoped so the org-001 generative block below can never wrap around into
+// the org-002 fixture appended to the shared `customers` array (it would:
+// this loop runs longer than org1Customers.length, so `i % customers.length`
+// against the unscoped array would eventually land on the org-002 row).
+const org1Customers = customers.filter((c) => c.organizationId === "org-001");
+
 const STATUSES: ServiceStatus[] = [
   "planned",
   "in_progress",
@@ -44,9 +50,9 @@ const CATALOG = [
   ],
 ] as const;
 
-export const services: Service[] = Array.from({ length: 25 }, (_, i) => {
+const org1Services: Service[] = Array.from({ length: 25 }, (_, i) => {
   const index = i + 1;
-  const customer = customers[i % customers.length];
+  const customer = org1Customers[i % org1Customers.length];
   const [title, description] = CATALOG[i % CATALOG.length];
   const status = STATUSES[i % STATUSES.length];
   const month = 3 + (i % 6);
@@ -61,6 +67,7 @@ export const services: Service[] = Array.from({ length: 25 }, (_, i) => {
     title,
     description,
     status,
+    organizationId: "org-001" as const,
     scheduledDate:
       status === "cancelled"
         ? undefined
@@ -71,3 +78,20 @@ export const services: Service[] = Array.from({ length: 25 }, (_, i) => {
     ),
   };
 });
+
+// --- org-002 fixtures ("Acme Field Services") — small, hand-authored, isolation-testing only. ---
+const org2Services: Service[] = [
+  {
+    id: "svc-101",
+    customerId: "cust-101",
+    title: "CRM Setup & Onboarding",
+    description: "Workspace setup, user invites, and pipeline configuration.",
+    status: "in_progress",
+    organizationId: "org-002",
+    scheduledDate: d("2025-09-20T11:00:00+05:30"),
+    createdAt: d("2025-09-11T09:15:00+05:30"),
+    updatedAt: d("2025-09-15T10:00:00+05:30"),
+  },
+];
+
+export const services: Service[] = [...org1Services, ...org2Services];

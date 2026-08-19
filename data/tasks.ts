@@ -3,6 +3,10 @@ import { customers } from "./customers";
 import { leads } from "./leads";
 import { d, pad } from "./helpers";
 
+// Scoped so the org-001 generative blocks below can never wrap around into
+// the org-002 fixtures appended to the shared `customers` array.
+const org1Customers = customers.filter((c) => c.organizationId === "org-001");
+
 const PRIORITIES: TaskPriority[] = ["low", "medium", "high"];
 const STATUSES: TaskStatus[] = ["todo", "in_progress", "done", "cancelled"];
 
@@ -32,8 +36,8 @@ const CUST_TASKS = [
   ["Health check call", "Inactive for 3 weeks."],
 ] as const;
 
-/** 20 lead-parent + 20 customer-parent tasks. */
-export const tasks: Task[] = [
+/** 20 lead-parent + 20 customer-parent tasks (org-001). */
+const org1Tasks: Task[] = [
   ...Array.from({ length: 20 }, (_, i) => {
     const index = i + 1;
     const lead = leads[i % 50];
@@ -50,6 +54,7 @@ export const tasks: Task[] = [
       dueDate: d(`2026-${pad(month, 2)}-${pad(day, 2)}T18:00:00+05:30`),
       priority: PRIORITIES[i % PRIORITIES.length],
       status: STATUSES[i % STATUSES.length],
+      organizationId: "org-001" as const,
       createdAt: d(
         `2026-${pad(month, 2)}-${pad(Math.max(1, day - 5), 2)}T10:15:00+05:30`,
       ),
@@ -60,7 +65,7 @@ export const tasks: Task[] = [
   }),
   ...Array.from({ length: 20 }, (_, i) => {
     const index = i + 21;
-    const customer = customers[i % customers.length];
+    const customer = org1Customers[i % org1Customers.length];
     const [title, description] = CUST_TASKS[i % CUST_TASKS.length];
     const month = 4 + (i % 5);
     const day = 3 + ((i * 3) % 25);
@@ -74,6 +79,7 @@ export const tasks: Task[] = [
       dueDate: d(`2026-${pad(month, 2)}-${pad(day, 2)}T17:30:00+05:30`),
       priority: PRIORITIES[(i + 1) % PRIORITIES.length],
       status: STATUSES[(i + 2) % STATUSES.length],
+      organizationId: "org-001" as const,
       createdAt: d(
         `2026-${pad(month, 2)}-${pad(Math.max(1, day - 4), 2)}T11:00:00+05:30`,
       ),
@@ -83,3 +89,35 @@ export const tasks: Task[] = [
     };
   }),
 ];
+
+// --- org-002 fixtures ("Acme Field Services") — small, hand-authored, isolation-testing only. ---
+const org2Tasks: Task[] = [
+  {
+    id: "task-101",
+    title: "Send pricing PDF",
+    description: "Include GST and annual discount for logistics vertical.",
+    assignedTo: "user-102",
+    leadId: "lead-104",
+    dueDate: d("2025-09-20T18:00:00+05:30"),
+    priority: "medium",
+    status: "todo",
+    organizationId: "org-002",
+    createdAt: d("2025-09-16T12:05:00+05:30"),
+    updatedAt: d("2025-09-16T12:05:00+05:30"),
+  },
+  {
+    id: "task-102",
+    title: "Complete onboarding checklist",
+    description: "Users, pipeline stages, WhatsApp number.",
+    assignedTo: "user-102",
+    customerId: "cust-101",
+    dueDate: d("2025-09-25T17:30:00+05:30"),
+    priority: "high",
+    status: "in_progress",
+    organizationId: "org-002",
+    createdAt: d("2025-09-15T11:30:00+05:30"),
+    updatedAt: d("2025-09-19T09:00:00+05:30"),
+  },
+];
+
+export const tasks: Task[] = [...org1Tasks, ...org2Tasks];

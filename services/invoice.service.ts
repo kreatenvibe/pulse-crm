@@ -59,28 +59,40 @@ function toUpdatePatch(
 }
 
 class InvoiceService {
-  async getAll(): Promise<Invoice[]> {
-    const rows = await prisma.invoices.findMany({ orderBy: ORDER_BY_ID });
+  async getAll(organizationId: ID): Promise<Invoice[]> {
+    const rows = await prisma.invoices.findMany({
+      where: { organization_id: organizationId },
+      orderBy: ORDER_BY_ID,
+    });
     return rows.map(toInvoice);
   }
 
-  async getById(id: ID): Promise<Invoice | null> {
-    const row = await prisma.invoices.findUnique({ where: { id } });
+  async getById(organizationId: ID, id: ID): Promise<Invoice | null> {
+    const row = await prisma.invoices.findFirst({
+      where: { id, organization_id: organizationId },
+    });
     return row ? toInvoice(row) : null;
   }
 
-  async create(data: CreateInvoiceInput): Promise<Invoice> {
+  async create(organizationId: ID, data: CreateInvoiceInput): Promise<Invoice> {
     const input = parseInput(CreateInvoiceSchema, data);
-    const customerId = await assertCustomerId(input.customerId);
-    const serviceId = await assertOptionalServiceId(input.serviceId);
+    const customerId = await assertCustomerId(organizationId, input.customerId);
+    const serviceId = await assertOptionalServiceId(organizationId, input.serviceId);
     const timestamp = now();
 
+    // Deliberately NOT filtered by organizationId — `id` is a global primary
+    // key (see lead.service.ts's `create` for the full rationale). The
+    // *number* (`invoice_number`) is the one deliberately per-org-unique
+    // field (`@@unique([organization_id, invoice_number])`); a duplicate
+    // within one org still 409s via the existing P2002 mapping, and the
+    // same number is legitimately reusable across two different orgs.
     const existing = await prisma.invoices.findMany({ select: { id: true } });
     const id = nextId("inv", existing);
 
     const row = await prisma.invoices.create({
       data: {
         id,
+        organization_id: organizationId,
         customer_id: customerId,
         service_id: serviceId ?? null,
         amount_cents: BigInt(input.amountCents),
@@ -97,17 +109,17 @@ class InvoiceService {
     return toInvoice(row);
   }
 
-  async update(id: ID, data: UpdateInvoiceInput): Promise<Invoice | null> {
-    const previous = await this.getById(id);
+  async update(organizationId: ID, id: ID, data: UpdateInvoiceInput): Promise<Invoice | null> {
+    const previous = await this.getById(organizationId, id);
     if (!previous) return null;
 
     const validated = parseInput(UpdateInvoiceSchema, data);
     if (validated.customerId !== undefined) {
-      validated.customerId = await assertCustomerId(validated.customerId);
+      validated.customerId = await assertCustomerId(organizationId, validated.customerId);
     }
     // serviceId is nullable: presence (even undefined) means "set/clear it".
     if ("serviceId" in validated) {
-      validated.serviceId = await assertOptionalServiceId(validated.serviceId);
+      validated.serviceId = await assertOptionalServiceId(organizationId, validated.serviceId);
     }
     const row = await prisma.invoices.update({
       where: { id },
@@ -117,9 +129,9 @@ class InvoiceService {
     return toInvoice(row);
   }
 
-  async delete(id: ID): Promise<boolean> {
-    const existing = await prisma.invoices.findUnique({
-      where: { id },
+  async delete(organizationId: ID, id: ID): Promise<boolean> {
+    const existing = await prisma.invoices.findFirst({
+      where: { id, organization_id: organizationId },
       select: { id: true },
     });
     if (!existing) return false;
@@ -128,41 +140,42 @@ class InvoiceService {
     return true;
   }
 
-  async getByCustomerId(customerId: ID): Promise<Invoice[]> {
+  async getByCustomerId(organizationId: ID, customerId: ID): Promise<Invoice[]> {
     const rows = await prisma.invoices.findMany({
-      where: { customer_id: customerId },
+      where: { organization_id: organizationId, customer_id: customerId },
       orderBy: ORDER_BY_ID,
     });
     return rows.map(toInvoice);
   }
 
-  async getByStatus(status: InvoiceStatus): Promise<Invoice[]> {
+  async getByStatus(organizationId: ID, status: InvoiceStatus): Promise<Invoice[]> {
     const rows = await prisma.invoices.findMany({
-      where: { status },
+      where: { organization_id: organizationId, status },
       orderBy: ORDER_BY_ID,
     });
     return rows.map(toInvoice);
   }
 
-  async getByServiceId(serviceId: ID): Promise<Invoice[]> {
+  async getByServiceId(organizationId: ID, serviceId: ID): Promise<Invoice[]> {
     const rows = await prisma.invoices.findMany({
-      where: { service_id: serviceId },
+      where: { organization_id: organizationId, service_id: serviceId },
       orderBy: ORDER_BY_ID,
     });
     return rows.map(toInvoice);
   }
 
-  async getUnpaid(): Promise<Invoice[]> {
+  async getUnpaid(organizationId: ID): Promise<Invoice[]> {
     const rows = await prisma.invoices.findMany({
-      where: { status: { in: ["sent", "overdue"] } },
+      where: { organization_id: organizationId, status: { in: ["sent", "overdue"] } },
       orderBy: ORDER_BY_ID,
     });
     return rows.map(toInvoice);
   }
 
-  async getOverdue(asOf: Date = now()): Promise<Invoice[]> {
+  async getOverdue(organizationId: ID, asOf: Date = now()): Promise<Invoice[]> {
     const rows = await prisma.invoices.findMany({
       where: {
+        organization_id: organizationId,
         OR: [
           { status: "overdue" },
           { AND: [{ status: "sent" }, { due_date: { lt: asOf } }] },

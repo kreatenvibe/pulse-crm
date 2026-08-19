@@ -3,6 +3,10 @@ import { customers } from "./customers";
 import { leads } from "./leads";
 import { d, pad } from "./helpers";
 
+// Scoped so the org-001 generative blocks below can never wrap around into
+// the org-002 fixtures appended to the shared `customers` array.
+const org1Customers = customers.filter((c) => c.organizationId === "org-001");
+
 const STATUSES: AppointmentStatus[] = [
   "scheduled",
   "confirmed",
@@ -29,8 +33,8 @@ const TITLES_CUST = [
   "Renewal discussion",
 ] as const;
 
-/** 15 lead-parent + 15 customer-parent appointments. */
-export const appointments: Appointment[] = [
+/** 15 lead-parent + 15 customer-parent appointments (org-001). */
+const org1Appointments: Appointment[] = [
   ...Array.from({ length: 15 }, (_, i) => {
     const index = i + 1;
     // Prefer open pipeline leads (21–50), cycle through them
@@ -60,6 +64,7 @@ export const appointments: Appointment[] = [
           : i % 3 === 1
             ? "Bring pricing sheet for 5-seat plan."
             : undefined,
+      organizationId: "org-001" as const,
       createdAt: d(
         `2026-${pad(month, 2)}-${pad(Math.max(1, day - 3), 2)}T09:00:00+05:30`,
       ),
@@ -68,7 +73,7 @@ export const appointments: Appointment[] = [
   }),
   ...Array.from({ length: 15 }, (_, i) => {
     const index = i + 16;
-    const customer = customers[i % customers.length];
+    const customer = org1Customers[i % org1Customers.length];
     const day = 2 + ((i * 3) % 26);
     const month = 4 + (i % 5);
     const hour = 11 + (i % 5);
@@ -88,6 +93,7 @@ export const appointments: Appointment[] = [
       status: STATUSES[(i + 2) % STATUSES.length],
       assignedTo: customer.assignedTo,
       notes: i % 4 === 0 ? "Zoom link shared via email." : undefined,
+      organizationId: "org-001" as const,
       createdAt: d(
         `2026-${pad(month, 2)}-${pad(Math.max(1, day - 2), 2)}T12:00:00+05:30`,
       ),
@@ -95,3 +101,34 @@ export const appointments: Appointment[] = [
     };
   }),
 ];
+
+// --- org-002 fixtures ("Acme Field Services") — small, hand-authored, isolation-testing only. ---
+const org2Appointments: Appointment[] = [
+  {
+    id: "appt-101",
+    leadId: "lead-105",
+    title: "Discovery call",
+    start: d("2025-09-22T11:00:00+05:30"),
+    end: d("2025-09-22T11:45:00+05:30"),
+    status: "confirmed",
+    assignedTo: "user-101",
+    notes: "Bring pricing sheet for dental clinics.",
+    organizationId: "org-002",
+    createdAt: d("2025-09-18T18:05:00+05:30"),
+    updatedAt: d("2025-09-18T18:05:00+05:30"),
+  },
+  {
+    id: "appt-102",
+    customerId: "cust-101",
+    title: "Onboarding kickoff",
+    start: d("2025-09-15T10:00:00+05:30"),
+    end: d("2025-09-15T11:00:00+05:30"),
+    status: "completed",
+    assignedTo: "user-102",
+    organizationId: "org-002",
+    createdAt: d("2025-09-11T09:00:00+05:30"),
+    updatedAt: d("2025-09-15T11:00:00+05:30"),
+  },
+];
+
+export const appointments: Appointment[] = [...org1Appointments, ...org2Appointments];

@@ -273,7 +273,7 @@ function createdAtFor(index: number): Date {
   return d(`2026-${pad(month, 2)}-${pad(day, 2)}T10:${pad(index % 60, 2)}:00+05:30`);
 }
 
-export const leads: Lead[] = Array.from({ length: 50 }, (_, i) => {
+const org1Leads: Lead[] = Array.from({ length: 50 }, (_, i) => {
   const index = i + 1;
   const status = statusFor(index);
   const createdAt = createdAtFor(index);
@@ -298,8 +298,98 @@ export const leads: Lead[] = Array.from({ length: 50 }, (_, i) => {
     assignedTo: assigneeFor(index),
     message: MESSAGES[(index - 1) % MESSAGES.length],
     tags: TAG_SETS[(index - 1) % TAG_SETS.length],
+    organizationId: "org-001",
     lastContactedAt,
     createdAt,
     updatedAt: lastContactedAt ?? createdAt,
   };
 });
+
+// --- org-002 fixtures ("Acme Field Services") — small, hand-authored, isolation-testing only. ---
+const org2Leads: Lead[] = [
+  {
+    id: "lead-101",
+    name: "Devika Rao",
+    email: "devika.rao@gmail.com",
+    phone: "+91 90000 10001",
+    company: "Coral Bay Resorts",
+    status: "converted",
+    source: "referral",
+    priority: "high",
+    assignedTo: "user-102",
+    message: "Referred by an existing Acme client. Wants onboarding this week.",
+    tags: ["hospitality", "hot"],
+    organizationId: "org-002",
+    lastContactedAt: d("2025-09-10T15:00:00+05:30"),
+    createdAt: d("2025-09-05T10:00:00+05:30"),
+    updatedAt: d("2025-09-10T15:00:00+05:30"),
+  },
+  {
+    id: "lead-102",
+    name: "Sameer Joshi",
+    email: "sameer.joshi@gmail.com",
+    phone: "+91 90000 10002",
+    company: "Joshi Field Repairs",
+    status: "new",
+    source: "website",
+    priority: "medium",
+    assignedTo: "user-102",
+    message: "Filled the contact form, wants a callback.",
+    tags: ["smb"],
+    organizationId: "org-002",
+    createdAt: d("2025-09-12T11:30:00+05:30"),
+    updatedAt: d("2025-09-12T11:30:00+05:30"),
+  },
+  {
+    id: "lead-103",
+    name: "Rina D'Souza",
+    email: "rina.dsouza@gmail.com",
+    phone: "+91 90000 10003",
+    status: "contacted",
+    source: "phone",
+    priority: "low",
+    assignedTo: "user-101",
+    message: "Called in asking about pricing for a 3-user plan.",
+    tags: ["price-sensitive"],
+    organizationId: "org-002",
+    lastContactedAt: d("2025-09-14T17:00:00+05:30"),
+    createdAt: d("2025-09-13T09:00:00+05:30"),
+    updatedAt: d("2025-09-14T17:00:00+05:30"),
+  },
+  {
+    id: "lead-104",
+    name: "Manoj Bhandari",
+    email: "manoj.bhandari@gmail.com",
+    phone: "+91 90000 10004",
+    company: "Bhandari Logistics",
+    status: "qualified",
+    source: "google",
+    priority: "medium",
+    assignedTo: "user-102",
+    message: "Compared us with two competitors, leaning our way.",
+    tags: ["enterprise", "follow-up"],
+    organizationId: "org-002",
+    lastContactedAt: d("2025-09-16T12:00:00+05:30"),
+    createdAt: d("2025-09-14T09:30:00+05:30"),
+    updatedAt: d("2025-09-16T12:00:00+05:30"),
+  },
+  {
+    id: "lead-105",
+    name: "Tara Nambiar",
+    email: "tara.nambiar@gmail.com",
+    phone: "+91 90000 10005",
+    company: "Nambiar Dental",
+    status: "appointment_scheduled",
+    source: "whatsapp",
+    priority: "high",
+    assignedTo: "user-101",
+    message: "Booked a demo call for next Monday.",
+    tags: ["dental", "demo-requested"],
+    organizationId: "org-002",
+    lastContactedAt: d("2025-09-18T18:00:00+05:30"),
+    createdAt: d("2025-09-15T10:00:00+05:30"),
+    updatedAt: d("2025-09-18T18:00:00+05:30"),
+  },
+];
+
+export const leads: Lead[] = [...org1Leads, ...org2Leads];

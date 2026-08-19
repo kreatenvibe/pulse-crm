@@ -11,6 +11,9 @@ export interface Service extends BaseEntity {
   description?: string;
   status: ServiceStatus;
   scheduledDate?: Date;
+
+  /** Optional until Milestone 5/6 thread org scoping through the service layer. */
+  organizationId?: ID;
 }
 
 /** Service as returned by API (dates are ISO strings). */

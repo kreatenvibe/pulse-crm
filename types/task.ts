@@ -15,6 +15,9 @@ export interface Task extends BaseEntity {
   dueDate: Date;
   priority: TaskPriority;
   status: TaskStatus;
+
+  /** Optional until Milestone 5/6 thread org scoping through the service layer. */
+  organizationId?: ID;
 }
 
 /** Task as returned by API JSON (dates are ISO strings). */

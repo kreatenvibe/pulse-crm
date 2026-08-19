@@ -57,24 +57,31 @@ function toUpdatePatch(
 }
 
 class AppointmentService {
-  async getAll(): Promise<Appointment[]> {
-    const rows = await prisma.appointments.findMany({ orderBy: ORDER_BY_ID });
+  async getAll(organizationId: ID): Promise<Appointment[]> {
+    const rows = await prisma.appointments.findMany({
+      where: { organization_id: organizationId },
+      orderBy: ORDER_BY_ID,
+    });
     return rows.map(toAppointment);
   }
 
-  async getById(id: ID): Promise<Appointment | null> {
-    const row = await prisma.appointments.findUnique({ where: { id } });
+  async getById(organizationId: ID, id: ID): Promise<Appointment | null> {
+    const row = await prisma.appointments.findFirst({
+      where: { id, organization_id: organizationId },
+    });
     return row ? toAppointment(row) : null;
   }
 
-  async create(data: CreateAppointmentInput): Promise<Appointment> {
+  async create(organizationId: ID, data: CreateAppointmentInput): Promise<Appointment> {
     // Schema validates fields + the pure end >= start rule (both dates present).
     const input = parseInput(CreateAppointmentSchema, data);
     // Exactly-one-of + existence for leadId/customerId (DB-backed).
-    const link = await resolveLeadCustomerLink(input);
-    const assignedTo = await assertUserId(input.assignedTo);
+    const link = await resolveLeadCustomerLink(organizationId, input);
+    const assignedTo = await assertUserId(organizationId, input.assignedTo);
     const timestamp = now();
 
+    // Deliberately NOT filtered by organizationId — `id` is a global primary
+    // key (see lead.service.ts's `create` for the full rationale).
     const existing = await prisma.appointments.findMany({
       select: { id: true },
     });
@@ -83,6 +90,7 @@ class AppointmentService {
     const row = await prisma.appointments.create({
       data: {
         id,
+        organization_id: organizationId,
         lead_id: link.leadId ?? null,
         customer_id: link.customerId ?? null,
         title: input.title,
@@ -100,15 +108,16 @@ class AppointmentService {
   }
 
   async update(
+    organizationId: ID,
     id: ID,
     data: UpdateAppointmentInput,
   ): Promise<Appointment | null> {
-    const existing = await this.getById(id);
+    const existing = await this.getById(organizationId, id);
     if (!existing) return null;
 
     const validated = parseInput(UpdateAppointmentSchema, data);
     if (validated.assignedTo !== undefined) {
-      validated.assignedTo = await assertUserId(validated.assignedTo);
+      validated.assignedTo = await assertUserId(organizationId, validated.assignedTo);
     }
     if (
       "leadId" in validated ||
@@ -117,6 +126,7 @@ class AppointmentService {
       validated.customerId !== undefined
     ) {
       const link = await resolveLeadCustomerLink(
+        organizationId,
         { leadId: validated.leadId, customerId: validated.customerId },
         existing,
       );
@@ -136,9 +146,9 @@ class AppointmentService {
     return toAppointment(row);
   }
 
-  async delete(id: ID): Promise<boolean> {
-    const existing = await prisma.appointments.findUnique({
-      where: { id },
+  async delete(organizationId: ID, id: ID): Promise<boolean> {
+    const existing = await prisma.appointments.findFirst({
+      where: { id, organization_id: organizationId },
       select: { id: true },
     });
     if (!existing) return false;
@@ -147,51 +157,52 @@ class AppointmentService {
     return true;
   }
 
-  async getByStatus(status: AppointmentStatus): Promise<Appointment[]> {
+  async getByStatus(organizationId: ID, status: AppointmentStatus): Promise<Appointment[]> {
     const rows = await prisma.appointments.findMany({
-      where: { status },
+      where: { organization_id: organizationId, status },
       orderBy: ORDER_BY_ID,
     });
     return rows.map(toAppointment);
   }
 
-  async getByLeadId(leadId: ID): Promise<Appointment[]> {
+  async getByLeadId(organizationId: ID, leadId: ID): Promise<Appointment[]> {
     const rows = await prisma.appointments.findMany({
-      where: { lead_id: leadId },
+      where: { organization_id: organizationId, lead_id: leadId },
       orderBy: ORDER_BY_ID,
     });
     return rows.map(toAppointment);
   }
 
-  async getByCustomerId(customerId: ID): Promise<Appointment[]> {
+  async getByCustomerId(organizationId: ID, customerId: ID): Promise<Appointment[]> {
     const rows = await prisma.appointments.findMany({
-      where: { customer_id: customerId },
+      where: { organization_id: organizationId, customer_id: customerId },
       orderBy: ORDER_BY_ID,
     });
     return rows.map(toAppointment);
   }
 
-  async getByAssignee(userId: ID): Promise<Appointment[]> {
+  async getByAssignee(organizationId: ID, userId: ID): Promise<Appointment[]> {
     const rows = await prisma.appointments.findMany({
-      where: { assigned_to: userId },
+      where: { organization_id: organizationId, assigned_to: userId },
       orderBy: ORDER_BY_ID,
     });
     return rows.map(toAppointment);
   }
 
   /** Reassign lead appointments to a customer after conversion. */
-  async migrateLeadToCustomer(leadId: ID, customerId: ID): Promise<number> {
+  async migrateLeadToCustomer(organizationId: ID, leadId: ID, customerId: ID): Promise<number> {
     const result = await prisma.appointments.updateMany({
-      where: { lead_id: leadId },
+      where: { lead_id: leadId, organization_id: organizationId },
       data: { lead_id: null, customer_id: customerId, updated_at: now() },
     });
     return result.count;
   }
 
   /** Future appointments that are still scheduled or confirmed. */
-  async getUpcoming(from: Date = now()): Promise<Appointment[]> {
+  async getUpcoming(organizationId: ID, from: Date = now()): Promise<Appointment[]> {
     const rows = await prisma.appointments.findMany({
       where: {
+        organization_id: organizationId,
         starts_at: { gte: from },
         status: { in: ["scheduled", "confirmed"] },
       },
@@ -200,9 +211,9 @@ class AppointmentService {
     return rows.map(toAppointment);
   }
 
-  async getInRange(from: Date, to: Date): Promise<Appointment[]> {
+  async getInRange(organizationId: ID, from: Date, to: Date): Promise<Appointment[]> {
     const rows = await prisma.appointments.findMany({
-      where: { starts_at: { gte: from, lte: to } },
+      where: { organization_id: organizationId, starts_at: { gte: from, lte: to } },
       orderBy: { starts_at: "asc" },
     });
     return rows.map(toAppointment);

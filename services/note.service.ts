@@ -44,28 +44,36 @@ function toUpdatePatch(validated: UpdateNoteInput): Prisma.notesUncheckedUpdateI
 }
 
 class NoteService {
-  async getAll(): Promise<Note[]> {
-    const rows = await prisma.notes.findMany({ orderBy: ORDER_BY_ID });
+  async getAll(organizationId: ID): Promise<Note[]> {
+    const rows = await prisma.notes.findMany({
+      where: { organization_id: organizationId },
+      orderBy: ORDER_BY_ID,
+    });
     return rows.map(toNote);
   }
 
-  async getById(id: ID): Promise<Note | null> {
-    const row = await prisma.notes.findUnique({ where: { id } });
+  async getById(organizationId: ID, id: ID): Promise<Note | null> {
+    const row = await prisma.notes.findFirst({
+      where: { id, organization_id: organizationId },
+    });
     return row ? toNote(row) : null;
   }
 
-  async create(data: CreateNoteInput): Promise<Note> {
+  async create(organizationId: ID, data: CreateNoteInput): Promise<Note> {
     const input = parseInput(CreateNoteSchema, data);
-    await assertEntityReference(input.entityType, input.entityId);
-    const createdBy = await assertUserId(input.createdBy, "createdBy");
+    await assertEntityReference(organizationId, input.entityType, input.entityId);
+    const createdBy = await assertUserId(organizationId, input.createdBy, "createdBy");
     const timestamp = now();
 
+    // Deliberately NOT filtered by organizationId — `id` is a global primary
+    // key (see lead.service.ts's `create` for the full rationale).
     const existing = await prisma.notes.findMany({ select: { id: true } });
     const id = nextId("note", existing);
 
     const row = await prisma.notes.create({
       data: {
         id,
+        organization_id: organizationId,
         entity_type: input.entityType,
         entity_id: input.entityId,
         content: input.content,
@@ -78,16 +86,16 @@ class NoteService {
     return toNote(row);
   }
 
-  async update(id: ID, data: UpdateNoteInput): Promise<Note | null> {
-    const previous = await this.getById(id);
+  async update(organizationId: ID, id: ID, data: UpdateNoteInput): Promise<Note | null> {
+    const previous = await this.getById(organizationId, id);
     if (!previous) return null;
 
     const validated = parseInput(UpdateNoteSchema, data);
     if (validated.entityType !== undefined && validated.entityId !== undefined) {
-      await assertEntityReference(validated.entityType, validated.entityId);
+      await assertEntityReference(organizationId, validated.entityType, validated.entityId);
     }
     if (validated.createdBy !== undefined) {
-      validated.createdBy = await assertUserId(validated.createdBy, "createdBy");
+      validated.createdBy = await assertUserId(organizationId, validated.createdBy, "createdBy");
     }
     const row = await prisma.notes.update({
       where: { id },
@@ -97,9 +105,9 @@ class NoteService {
     return toNote(row);
   }
 
-  async delete(id: ID): Promise<boolean> {
-    const existing = await prisma.notes.findUnique({
-      where: { id },
+  async delete(organizationId: ID, id: ID): Promise<boolean> {
+    const existing = await prisma.notes.findFirst({
+      where: { id, organization_id: organizationId },
       select: { id: true },
     });
     if (!existing) return false;
@@ -108,17 +116,17 @@ class NoteService {
     return true;
   }
 
-  async getForEntity(entityType: EntityType, entityId: ID): Promise<Note[]> {
+  async getForEntity(organizationId: ID, entityType: EntityType, entityId: ID): Promise<Note[]> {
     const rows = await prisma.notes.findMany({
-      where: { entity_type: entityType, entity_id: entityId },
+      where: { organization_id: organizationId, entity_type: entityType, entity_id: entityId },
       orderBy: { created_at: "desc" },
     });
     return rows.map(toNote);
   }
 
-  async getByAuthor(userId: ID): Promise<Note[]> {
+  async getByAuthor(organizationId: ID, userId: ID): Promise<Note[]> {
     const rows = await prisma.notes.findMany({
-      where: { created_by: userId },
+      where: { organization_id: organizationId, created_by: userId },
       orderBy: ORDER_BY_ID,
     });
     return rows.map(toNote);

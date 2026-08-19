@@ -15,6 +15,7 @@ function toUser(row: UserRow): User {
     avatar: row.avatar ?? undefined,
     role: row.role as UserRole,
     isActive: row.is_active,
+    organizationId: row.organization_id ?? undefined,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -22,17 +23,26 @@ function toUser(row: UserRow): User {
 
 class UserService {
   /**
-   * Full user list for assignment pickers. Returns everyone (including inactive
-   * users) so edit forms can still resolve a record already assigned to an
-   * inactive user; the UI decides how to present them.
+   * Full user list for assignment pickers, scoped to the caller's org — every
+   * `assignedTo`/`performedBy`/`createdBy` picker across leads/customers/
+   * appointments/tasks depends on this being org-scoped, or every org would
+   * silently see every other org's employees (plan.md §9). Returns everyone
+   * in the org (including inactive users) so edit forms can still resolve a
+   * record already assigned to an inactive user; the UI decides how to
+   * present them.
    */
-  async getAll(): Promise<User[]> {
-    const rows = await prisma.users.findMany({ orderBy: ORDER_BY_ID });
+  async getAll(organizationId: ID): Promise<User[]> {
+    const rows = await prisma.users.findMany({
+      where: { organization_id: organizationId },
+      orderBy: ORDER_BY_ID,
+    });
     return rows.map(toUser);
   }
 
-  async getById(id: ID): Promise<User | null> {
-    const row = await prisma.users.findUnique({ where: { id } });
+  async getById(organizationId: ID, id: ID): Promise<User | null> {
+    const row = await prisma.users.findFirst({
+      where: { id, organization_id: organizationId },
+    });
     return row ? toUser(row) : null;
   }
 }

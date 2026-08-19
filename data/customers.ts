@@ -34,9 +34,14 @@ const LIFECYCLES: CustomerLifecycleStatus[] = [
   "churned",
 ];
 
-const convertedLeads = leads.filter((l) => l.status === "converted");
+// Scoped to org-001 so this generative derivation (and every downstream file
+// that indexes into `customers` by position) stays exactly as it was before
+// org-002 existed. org-002's converted lead gets a hand-authored customer below.
+const convertedLeads = leads.filter(
+  (l) => l.status === "converted" && l.organizationId === "org-001",
+);
 
-export const customers: Customer[] = convertedLeads.map((lead, i) => {
+const org1Customers: Customer[] = convertedLeads.map((lead, i) => {
   const index = i + 1;
   const createdAt = d(
     `2026-${pad(2 + (i % 6), 2)}-${pad(5 + (i % 20), 2)}T14:${pad(i % 60, 2)}:00+05:30`,
@@ -52,9 +57,30 @@ export const customers: Customer[] = convertedLeads.map((lead, i) => {
     address: ADDRESSES[i],
     assignedTo: lead.assignedTo,
     lifecycleStatus: LIFECYCLES[i % LIFECYCLES.length],
+    organizationId: "org-001",
     createdAt,
     updatedAt: d(
       `2026-${pad(Math.min(8, 3 + (i % 6)), 2)}-${pad(1 + (i % 27), 2)}T11:00:00+05:30`,
     ),
   };
 });
+
+// --- org-002 fixtures ("Acme Field Services") — small, hand-authored, isolation-testing only. ---
+const org2Customers: Customer[] = [
+  {
+    id: "cust-101",
+    leadId: "lead-101",
+    businessName: "Coral Bay Resorts",
+    primaryContact: "Devika Rao",
+    phone: "+91 90000 10001",
+    email: "devika.rao@gmail.com",
+    address: "2 Beach Road, Goa 403001",
+    assignedTo: "user-102",
+    lifecycleStatus: "onboarding",
+    organizationId: "org-002",
+    createdAt: d("2025-09-10T15:30:00+05:30"),
+    updatedAt: d("2025-09-10T15:30:00+05:30"),
+  },
+];
+
+export const customers: Customer[] = [...org1Customers, ...org2Customers];

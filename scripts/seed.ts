@@ -17,6 +17,7 @@
 import "dotenv/config";
 import { prisma } from "@/lib/prisma";
 import {
+  organizations,
   users,
   leads,
   customers,
@@ -46,6 +47,17 @@ async function upsertAll<T extends { id: string }>(
 async function main(): Promise<void> {
   console.log("Seeding Pulse CRM database from /data …");
 
+  // 0. Organizations — referenced by every tenant-owned table's organization_id FK.
+  await upsertAll("organizations", organizations, (o) => {
+    const data = {
+      id: o.id,
+      name: o.name,
+      created_at: o.createdAt,
+      updated_at: o.updatedAt,
+    };
+    return prisma.organizations.upsert({ where: { id: o.id }, create: data, update: data });
+  });
+
   // 1. Users — referenced by every other table's assignee/author FKs.
   await upsertAll("users", users, (u) => {
     const data = {
@@ -55,6 +67,7 @@ async function main(): Promise<void> {
       avatar: u.avatar ?? null,
       role: u.role,
       is_active: u.isActive,
+      organization_id: u.organizationId ?? null,
       created_at: u.createdAt,
       updated_at: u.updatedAt,
     };
@@ -75,6 +88,7 @@ async function main(): Promise<void> {
       message: l.message ?? null,
       tags: l.tags,
       assigned_to: l.assignedTo,
+      organization_id: l.organizationId ?? null,
       last_contacted_at: l.lastContactedAt ?? null,
       created_at: l.createdAt,
       updated_at: l.updatedAt,
@@ -93,6 +107,7 @@ async function main(): Promise<void> {
       email: c.email ?? null,
       address: c.address ?? null,
       assigned_to: c.assignedTo,
+      organization_id: c.organizationId ?? null,
       lifecycle_status: c.lifecycleStatus,
       created_at: c.createdAt,
       updated_at: c.updatedAt,
@@ -111,6 +126,7 @@ async function main(): Promise<void> {
       ends_at: a.end,
       status: a.status,
       assigned_to: a.assignedTo,
+      organization_id: a.organizationId ?? null,
       notes: a.notes ?? null,
       created_at: a.createdAt,
       updated_at: a.updatedAt,
@@ -130,6 +146,7 @@ async function main(): Promise<void> {
       due_date: t.dueDate,
       priority: t.priority,
       status: t.status,
+      organization_id: t.organizationId ?? null,
       created_at: t.createdAt,
       updated_at: t.updatedAt,
     };
@@ -144,6 +161,7 @@ async function main(): Promise<void> {
       title: s.title,
       description: s.description ?? null,
       status: s.status,
+      organization_id: s.organizationId ?? null,
       scheduled_date: s.scheduledDate ?? null,
       created_at: s.createdAt,
       updated_at: s.updatedAt,
@@ -162,6 +180,7 @@ async function main(): Promise<void> {
       currency: inv.currency,
       invoice_number: inv.invoiceNumber,
       status: inv.status,
+      organization_id: inv.organizationId ?? null,
       issued_at: inv.issuedAt,
       due_date: inv.dueDate,
       created_at: inv.createdAt,
@@ -179,6 +198,7 @@ async function main(): Promise<void> {
       type: act.type,
       description: act.description,
       performed_by: act.performedBy,
+      organization_id: act.organizationId ?? null,
       occurred_at: act.timestamp,
       created_at: act.createdAt,
       updated_at: act.updatedAt,
@@ -194,6 +214,7 @@ async function main(): Promise<void> {
       entity_id: n.entityId,
       content: n.content,
       created_by: n.createdBy,
+      organization_id: n.organizationId ?? null,
       created_at: n.createdAt,
       updated_at: n.updatedAt,
     };
@@ -202,6 +223,7 @@ async function main(): Promise<void> {
 
   // Verify: report the row count of every table after seeding.
   const counts = {
+    organizations: await prisma.organizations.count(),
     users: await prisma.users.count(),
     leads: await prisma.leads.count(),
     customers: await prisma.customers.count(),

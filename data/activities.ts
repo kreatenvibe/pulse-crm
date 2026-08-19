@@ -71,50 +71,60 @@ const DESCRIPTIONS: Record<ActivityType, string[]> = {
 
 type Target = { entityType: EntityType; entityId: string; performedBy: string };
 
+// Scoped to org-001 so this pool (and the 100 generated activities below)
+// stays exactly as it was before org-002 existed. org-002 gets a small,
+// hand-authored set of activities appended below instead of flowing through
+// this generative pool.
 function targets(): Target[] {
   const list: Target[] = [];
+  const org1Leads = leads.filter((l) => l.organizationId === "org-001");
+  const org1Customers = customers.filter((c) => c.organizationId === "org-001");
+  const org1Appointments = appointments.filter((a) => a.organizationId === "org-001");
+  const org1Tasks = tasks.filter((t) => t.organizationId === "org-001");
+  const org1Services = services.filter((s) => s.organizationId === "org-001");
+  const org1Invoices = invoices.filter((inv) => inv.organizationId === "org-001");
 
-  for (const lead of leads) {
+  for (const lead of org1Leads) {
     list.push({
       entityType: "lead",
       entityId: lead.id,
       performedBy: lead.assignedTo,
     });
   }
-  for (const customer of customers) {
+  for (const customer of org1Customers) {
     list.push({
       entityType: "customer",
       entityId: customer.id,
       performedBy: customer.assignedTo,
     });
   }
-  for (const appt of appointments) {
+  for (const appt of org1Appointments) {
     list.push({
       entityType: "appointment",
       entityId: appt.id,
       performedBy: appt.assignedTo,
     });
   }
-  for (const task of tasks) {
+  for (const task of org1Tasks) {
     list.push({
       entityType: "task",
       entityId: task.id,
       performedBy: task.assignedTo,
     });
   }
-  for (const service of services) {
+  for (const service of org1Services) {
     list.push({
       entityType: "service",
       entityId: service.id,
-      performedBy: customers.find((c) => c.id === service.customerId)!
+      performedBy: org1Customers.find((c) => c.id === service.customerId)!
         .assignedTo,
     });
   }
-  for (const invoice of invoices) {
+  for (const invoice of org1Invoices) {
     list.push({
       entityType: "invoice",
       entityId: invoice.id,
-      performedBy: customers.find((c) => c.id === invoice.customerId)!
+      performedBy: org1Customers.find((c) => c.id === invoice.customerId)!
         .assignedTo,
     });
   }
@@ -124,7 +134,7 @@ function targets(): Target[] {
 
 const TARGETS = targets();
 
-export const activities: Activity[] = Array.from({ length: 100 }, (_, i) => {
+const org1Activities: Activity[] = Array.from({ length: 100 }, (_, i) => {
   const index = i + 1;
   const target = TARGETS[i % TARGETS.length];
   const type = TYPES[i % TYPES.length];
@@ -144,8 +154,63 @@ export const activities: Activity[] = Array.from({ length: 100 }, (_, i) => {
     type,
     description,
     performedBy: target.performedBy,
+    organizationId: "org-001" as const,
     timestamp,
     createdAt: timestamp,
     updatedAt: timestamp,
   };
 });
+
+// --- org-002 fixtures ("Acme Field Services") — small, hand-authored, isolation-testing only. ---
+const org2Activities: Activity[] = [
+  {
+    id: "act-101",
+    entityType: "lead",
+    entityId: "lead-101",
+    type: "created",
+    description: "Record created in Pulse CRM.",
+    performedBy: "user-102",
+    organizationId: "org-002",
+    timestamp: d("2025-09-05T10:00:00+05:30"),
+    createdAt: d("2025-09-05T10:00:00+05:30"),
+    updatedAt: d("2025-09-05T10:00:00+05:30"),
+  },
+  {
+    id: "act-102",
+    entityType: "lead",
+    entityId: "lead-101",
+    type: "status_change",
+    description: "Marked as converted after signed proposal.",
+    performedBy: "user-102",
+    organizationId: "org-002",
+    timestamp: d("2025-09-10T15:00:00+05:30"),
+    createdAt: d("2025-09-10T15:00:00+05:30"),
+    updatedAt: d("2025-09-10T15:00:00+05:30"),
+  },
+  {
+    id: "act-103",
+    entityType: "customer",
+    entityId: "cust-101",
+    type: "created",
+    description: "Record created in Pulse CRM.",
+    performedBy: "user-102",
+    organizationId: "org-002",
+    timestamp: d("2025-09-10T15:30:00+05:30"),
+    createdAt: d("2025-09-10T15:30:00+05:30"),
+    updatedAt: d("2025-09-10T15:30:00+05:30"),
+  },
+  {
+    id: "act-104",
+    entityType: "invoice",
+    entityId: "inv-101",
+    type: "created",
+    description: "Invoice copy emailed to accounts.",
+    performedBy: "user-102",
+    organizationId: "org-002",
+    timestamp: d("2025-09-16T10:15:00+05:30"),
+    createdAt: d("2025-09-16T10:15:00+05:30"),
+    updatedAt: d("2025-09-16T10:15:00+05:30"),
+  },
+];
+
+export const activities: Activity[] = [...org1Activities, ...org2Activities];

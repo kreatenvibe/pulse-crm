@@ -5,15 +5,17 @@ import {
   readJson,
   withApiErrors,
 } from "@/lib/api-route";
+import { requireSession } from "@/lib/session";
 import { activityService } from "@/services";
 
 type Params = Promise<{ id: string }>;
 
 export const GET = withApiErrors(
-  async (_request: Request, { params }: { params: Params }) => {
+  async (request: Request, { params }: { params: Params }) => {
+    const { organizationId } = await requireSession(request);
     const { id } = await params;
     const activity = assertFound(
-      await activityService.getById(id),
+      await activityService.getById(organizationId, id),
       "Activity not found",
     );
     return ok(activity);
@@ -22,10 +24,11 @@ export const GET = withApiErrors(
 
 export const PATCH = withApiErrors(
   async (request: Request, { params }: { params: Params }) => {
+    const { organizationId } = await requireSession(request);
     const { id } = await params;
     const body = await readJson(request);
     const activity = assertFound(
-      await activityService.update(id, body),
+      await activityService.update(organizationId, id, body),
       "Activity not found",
     );
     return ok(activity);
@@ -33,9 +36,10 @@ export const PATCH = withApiErrors(
 );
 
 export const DELETE = withApiErrors(
-  async (_request: Request, { params }: { params: Params }) => {
+  async (request: Request, { params }: { params: Params }) => {
+    const { organizationId } = await requireSession(request);
     const { id } = await params;
-    assertFound(await activityService.delete(id), "Activity not found");
+    assertFound(await activityService.delete(organizationId, id), "Activity not found");
     return noContent();
   },
 );

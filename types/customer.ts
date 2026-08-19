@@ -16,6 +16,9 @@ export interface Customer extends BaseEntity {
 
   assignedTo: ID;
   lifecycleStatus: CustomerLifecycleStatus;
+
+  /** Optional until Milestone 5/6 thread org scoping through the service layer. */
+  organizationId?: ID;
 }
 
 /** Customer as returned by `/api/customers` (dates are ISO strings). */

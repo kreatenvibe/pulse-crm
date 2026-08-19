@@ -93,19 +93,26 @@ function toUpdatePatch(
   return patch;
 }
 
-/** Names of tables that still reference this customer, in a stable report order. */
-async function getCustomerDependencies(id: ID): Promise<string[]> {
+/**
+ * Names of tables that still reference this customer, in a stable report
+ * order. Scoped defensively by `organizationId` even though `id` is already
+ * proven org-owned by every caller (matches `lead.service.ts`'s
+ * `getLeadDependencies`, plan.md §9).
+ */
+async function getCustomerDependencies(organizationId: ID, id: ID): Promise<string[]> {
   const deps: string[] = [];
 
   const [taskCount, apptCount, serviceCount, invoiceCount, noteCount, activityCount] =
     await Promise.all([
-      prisma.tasks.count({ where: { customer_id: id } }),
-      prisma.appointments.count({ where: { customer_id: id } }),
-      prisma.services.count({ where: { customer_id: id } }),
-      prisma.invoices.count({ where: { customer_id: id } }),
-      prisma.notes.count({ where: { entity_type: "customer", entity_id: id } }),
+      prisma.tasks.count({ where: { customer_id: id, organization_id: organizationId } }),
+      prisma.appointments.count({ where: { customer_id: id, organization_id: organizationId } }),
+      prisma.services.count({ where: { customer_id: id, organization_id: organizationId } }),
+      prisma.invoices.count({ where: { customer_id: id, organization_id: organizationId } }),
+      prisma.notes.count({
+        where: { entity_type: "customer", entity_id: id, organization_id: organizationId },
+      }),
       prisma.activities.count({
-        where: { entity_type: "customer", entity_id: id },
+        where: { entity_type: "customer", entity_id: id, organization_id: organizationId },
       }),
     ]);
 
@@ -120,18 +127,23 @@ async function getCustomerDependencies(id: ID): Promise<string[]> {
 }
 
 class CustomerService {
-  async getAll(): Promise<Customer[]> {
-    const rows = await prisma.customers.findMany({ orderBy: ORDER_BY_ID });
+  async getAll(organizationId: ID): Promise<Customer[]> {
+    const rows = await prisma.customers.findMany({
+      where: { organization_id: organizationId },
+      orderBy: ORDER_BY_ID,
+    });
     return rows.map(toCustomer);
   }
 
-  async getById(id: ID): Promise<Customer | null> {
-    const row = await prisma.customers.findUnique({ where: { id } });
+  async getById(organizationId: ID, id: ID): Promise<Customer | null> {
+    const row = await prisma.customers.findFirst({
+      where: { id, organization_id: organizationId },
+    });
     return row ? toCustomer(row) : null;
   }
 
-  async getDetails(id: ID): Promise<CustomerDetails | null> {
-    const customer = await this.getById(id);
+  async getDetails(organizationId: ID, id: ID): Promise<CustomerDetails | null> {
+    const customer = await this.getById(organizationId, id);
     if (!customer) return null;
 
     const [
@@ -146,12 +158,12 @@ class CustomerService {
     ] = await Promise.all([
       resolveAssignee(customer.assignedTo),
       resolveSourceLead(customer.leadId),
-      activityService.getTimeline("customer", id),
-      noteService.getForEntity("customer", id),
-      appointmentService.getByCustomerId(id),
-      serviceService.getByCustomerId(id),
-      invoiceService.getByCustomerId(id),
-      taskService.getByCustomerId(id),
+      activityService.getTimeline(organizationId, "customer", id),
+      noteService.getForEntity(organizationId, "customer", id),
+      appointmentService.getByCustomerId(organizationId, id),
+      serviceService.getByCustomerId(organizationId, id),
+      invoiceService.getByCustomerId(organizationId, id),
+      taskService.getByCustomerId(organizationId, id),
     ]);
 
     return {
@@ -167,18 +179,21 @@ class CustomerService {
     };
   }
 
-  async create(data: CreateCustomerInput): Promise<Customer> {
+  async create(organizationId: ID, data: CreateCustomerInput): Promise<Customer> {
     const input = parseInput(CreateCustomerSchema, data);
-    const leadId = await assertLeadId(input.leadId);
-    const assignedTo = await assertUserId(input.assignedTo);
+    const leadId = await assertLeadId(organizationId, input.leadId);
+    const assignedTo = await assertUserId(organizationId, input.assignedTo);
     const timestamp = now();
 
+    // Deliberately NOT filtered by organizationId — `id` is a global primary
+    // key (see lead.service.ts's `create` for the full rationale).
     const existing = await prisma.customers.findMany({ select: { id: true } });
     const id = nextId("cust", existing);
 
     const row = await prisma.customers.create({
       data: {
         id,
+        organization_id: organizationId,
         lead_id: leadId,
         business_name: input.businessName ?? null,
         primary_contact: input.primaryContact,
@@ -195,16 +210,16 @@ class CustomerService {
     return toCustomer(row);
   }
 
-  async update(id: ID, data: UpdateCustomerInput): Promise<Customer | null> {
-    const previous = await this.getById(id);
+  async update(organizationId: ID, id: ID, data: UpdateCustomerInput): Promise<Customer | null> {
+    const previous = await this.getById(organizationId, id);
     if (!previous) return null;
 
     const validated = parseInput(UpdateCustomerSchema, data);
     if (validated.leadId !== undefined) {
-      validated.leadId = await assertLeadId(validated.leadId);
+      validated.leadId = await assertLeadId(organizationId, validated.leadId);
     }
     if (validated.assignedTo !== undefined) {
-      validated.assignedTo = await assertUserId(validated.assignedTo);
+      validated.assignedTo = await assertUserId(organizationId, validated.assignedTo);
     }
     const row = await prisma.customers.update({
       where: { id },
@@ -213,14 +228,14 @@ class CustomerService {
     return toCustomer(row);
   }
 
-  async delete(id: ID): Promise<boolean> {
-    const existing = await prisma.customers.findUnique({
-      where: { id },
+  async delete(organizationId: ID, id: ID): Promise<boolean> {
+    const existing = await prisma.customers.findFirst({
+      where: { id, organization_id: organizationId },
       select: { id: true },
     });
     if (!existing) return false;
 
-    const deps = await getCustomerDependencies(id);
+    const deps = await getCustomerDependencies(organizationId, id);
     if (deps.length > 0) {
       throw conflict(
         `Cannot delete customer: dependent ${deps.join(", ")} exist`,
@@ -231,44 +246,50 @@ class CustomerService {
     return true;
   }
 
-  async getByLeadId(leadId: ID): Promise<Customer | null> {
-    const row = await prisma.customers.findUnique({ where: { lead_id: leadId } });
+  async getByLeadId(organizationId: ID, leadId: ID): Promise<Customer | null> {
+    const row = await prisma.customers.findFirst({
+      where: { lead_id: leadId, organization_id: organizationId },
+    });
     return row ? toCustomer(row) : null;
   }
 
   async getByLifecycle(
+    organizationId: ID,
     status: CustomerLifecycleStatus,
   ): Promise<Customer[]> {
     const rows = await prisma.customers.findMany({
-      where: { lifecycle_status: status },
+      where: { organization_id: organizationId, lifecycle_status: status },
       orderBy: ORDER_BY_ID,
     });
     return rows.map(toCustomer);
   }
 
-  async getActive(): Promise<Customer[]> {
+  async getActive(organizationId: ID): Promise<Customer[]> {
     const rows = await prisma.customers.findMany({
-      where: { lifecycle_status: { in: ["active", "onboarding"] } },
+      where: {
+        organization_id: organizationId,
+        lifecycle_status: { in: ["active", "onboarding"] },
+      },
       orderBy: ORDER_BY_ID,
     });
     return rows.map(toCustomer);
   }
 
-  async getByAssignee(userId: ID): Promise<Customer[]> {
+  async getByAssignee(organizationId: ID, userId: ID): Promise<Customer[]> {
     const rows = await prisma.customers.findMany({
-      where: { assigned_to: userId },
+      where: { organization_id: organizationId, assigned_to: userId },
       orderBy: ORDER_BY_ID,
     });
     return rows.map(toCustomer);
   }
 
-  async search(query: string): Promise<Customer[]> {
+  async search(organizationId: ID, query: string): Promise<Customer[]> {
     const q = query.trim().toLowerCase();
-    if (!q) return this.getAll();
+    if (!q) return this.getAll(organizationId);
 
     // Preserve the original case-insensitive substring match across the joined
     // customer fields by applying it in-process, mirroring leadService.search.
-    const all = await this.getAll();
+    const all = await this.getAll(organizationId);
     return all.filter((customer) => {
       const haystack = [
         customer.primaryContact,

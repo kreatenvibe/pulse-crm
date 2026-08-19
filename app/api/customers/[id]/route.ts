@@ -5,15 +5,17 @@ import {
   readJson,
   withApiErrors,
 } from "@/lib/api-route";
+import { requireSession } from "@/lib/session";
 import { customerService } from "@/services";
 
 type Params = Promise<{ id: string }>;
 
 export const GET = withApiErrors(
-  async (_request: Request, { params }: { params: Params }) => {
+  async (request: Request, { params }: { params: Params }) => {
+    const { organizationId } = await requireSession(request);
     const { id } = await params;
     const customer = assertFound(
-      await customerService.getById(id),
+      await customerService.getById(organizationId, id),
       "Customer not found",
     );
     return ok(customer);
@@ -22,10 +24,11 @@ export const GET = withApiErrors(
 
 export const PATCH = withApiErrors(
   async (request: Request, { params }: { params: Params }) => {
+    const { organizationId } = await requireSession(request);
     const { id } = await params;
     const body = await readJson(request);
     const customer = assertFound(
-      await customerService.update(id, body),
+      await customerService.update(organizationId, id, body),
       "Customer not found",
     );
     return ok(customer);
@@ -33,9 +36,10 @@ export const PATCH = withApiErrors(
 );
 
 export const DELETE = withApiErrors(
-  async (_request: Request, { params }: { params: Params }) => {
+  async (request: Request, { params }: { params: Params }) => {
+    const { organizationId } = await requireSession(request);
     const { id } = await params;
-    assertFound(await customerService.delete(id), "Customer not found");
+    assertFound(await customerService.delete(organizationId, id), "Customer not found");
     return noContent();
   },
 );
